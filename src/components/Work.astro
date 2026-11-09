@@ -8,15 +8,15 @@ const { work } = site
 <section
   id="work"
   aria-labelledby="work-heading"
-  class="mx-auto w-full max-w-[1120px] px-6 pb-12 sm:px-8 md:pb-16"
+  class="mx-auto w-full max-w-[1120px] px-6 pb-[var(--space-section)] sm:px-8"
 >
   <h2
     id="work-heading"
-    class="mb-12 flex items-center gap-5 text-[clamp(1.5rem,2.4vw,1.875rem)] tracking-[-0.02em] after:h-px after:flex-1 after:bg-border after:content-[''] md:mb-16"
+    class="mb-[var(--space-heading)] flex items-center gap-5 text-[clamp(1.5rem,2.4vw,1.875rem)] tracking-[-0.02em] after:h-px after:flex-1 after:bg-border after:content-['']"
   >
     {work.heading}
   </h2>
-  <div class="space-y-20 md:space-y-32">
+  <div class="flex flex-col gap-[var(--space-section)]">
     {work.projects.map((project, index) => <ProjectRow project={project} flip={index % 2 === 1} />)}
   </div>
 </section>

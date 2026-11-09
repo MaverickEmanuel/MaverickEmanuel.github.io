@@ -20,10 +20,10 @@ const facts = [
 
 <article
   class:list={[
-    "enter grid items-center gap-8 lg:gap-16",
+    "enter grid items-start gap-8 lg:gap-16",
     flip
-      ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.18fr)]"
-      : "lg:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)]",
+      ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.22fr)]"
+      : "lg:grid-cols-[minmax(0,1.22fr)_minmax(0,1fr)]",
   ]}
   aria-labelledby={`${project.id}-title`}
 >
@@ -34,12 +34,19 @@ const facts = [
   <div class="min-w-0">
     <h3
       id={`${project.id}-title`}
-      class="text-[clamp(1.75rem,3vw,2.25rem)] leading-[1.1] tracking-[-0.02em]"
+      class="text-[clamp(1.75rem,3vw,2.25rem)] leading-[1.1] tracking-[-0.02em] lg:-mt-[0.12em]"
     >
       {project.title}
     </h3>
     <p class="mt-2.5 text-[0.9375rem] leading-normal text-muted-foreground">
-      {project.meta}
+      {
+        project.meta.map((part, index) => (
+          <>
+            {index > 0 && <span class="sr-only"> · </span>}
+            <span class="block">{part}</span>
+          </>
+        ))
+      }
     </p>
 
     <dl class="mt-7 space-y-5">

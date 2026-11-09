@@ -44,5 +44,9 @@ licensed under the SIL Open Font License, Version 1.1
 ## Roflow logo
 
 The Roflow logo and name belong to Roflow. The logo is shown here as a project
-credit and is not covered by this site's licence. (The wordmark in `src/assets/roflow-logo-lockup.svg` is the
-original lockup with its text converted to outlines.)
+credit and is not covered by this site's licence. `src/assets/roflow-logo-lockup.svg`
+is the original lockup with the wordmark re-outlined: the original draws
+"Roflow" as live text (Geist, weight 800), and here that text is converted to
+vector outlines so it renders identically without the font. The mark itself is
+unchanged, and the white parts take their colour from a theme token so the
+logo is legible on both the light and the dark backdrop.

@@ -34,7 +34,8 @@ export type ProjectMedia =
 export interface Project {
   id: string
   title: string
-  meta: string
+  /** Shown one part per line; read aloud joined with a middle dot. */
+  meta: string[]
   problem: string
   built: string
   why: string
@@ -139,7 +140,7 @@ export const site: SiteContent = {
       {
         id: "roflow",
         title: "Roflow",
-        meta: "Co-founder & Founding AI Engineer · Public beta released July 2026",
+        meta: ["Co-founder & Founding AI Engineer", "Public beta released July 2026"],
         problem:
           "Roblox developers split their work between Roblox Studio and a code editor, and general-purpose AI coding tools don't know how a Roblox project fits together.",
         built:
@@ -159,7 +160,7 @@ export const site: SiteContent = {
       {
         id: "demopilot",
         title: "DemoPilot",
-        meta: "Open source (MIT) side project",
+        meta: ["Open source (MIT) side project"],
         problem:
           "Product demo videos take a long time to record, and they go out of date as soon as the interface changes.",
         built:
@@ -212,7 +213,7 @@ export const site: SiteContent = {
 
   offTheClock: {
     heading: "Off the clock",
-    text: "Off the clock I make Roblox games, and I wrote a set of Claude Code skills and subagents to help me build them.",
+    text: "I make Roblox games, and I wrote a set of Claude Code skills and subagents to help me build them.",
   },
 
   footer: {
