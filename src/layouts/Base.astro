@@ -1,0 +1,41 @@
+---
+import "../styles/global.css"
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <!--
+      Render-blocking on purpose: sets the `dark` class before first paint.
+      Saved choice (localStorage "theme": "light" | "dark") wins, otherwise the
+      system preference. Must stay above any stylesheet-dependent paint.
+    -->
+    <script is:inline>
+      (function () {
+        var theme = null
+        try {
+          theme = localStorage.getItem("theme")
+        } catch (e) {}
+        if (theme !== "light" && theme !== "dark") {
+          theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+        }
+        var root = document.documentElement
+        root.classList.toggle("dark", theme === "dark")
+        root.style.colorScheme = theme
+      })()
+    </script>
+    <title>Maverick Emanuel</title>
+  </head>
+  <body class="min-h-screen">
+    <a
+      href="#main"
+      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-background focus-visible:px-3 focus-visible:py-2 focus-visible:text-foreground focus-visible:ring-3 focus-visible:ring-ring"
+    >
+      Skip to content
+    </a>
+    <slot />
+  </body>
+</html>
