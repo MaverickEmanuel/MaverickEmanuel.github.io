@@ -1,0 +1,20 @@
+---
+import { site } from "@/content/site"
+
+const { offTheClock } = site
+---
+
+<section
+  id="off-the-clock"
+  aria-labelledby="off-the-clock-heading"
+  class="mx-auto w-full max-w-[1120px] px-6 pb-24 sm:px-8 md:pb-28"
+>
+  <div class="max-w-md">
+    <h2 id="off-the-clock-heading" class="text-xl tracking-[-0.01em]">
+      {offTheClock.heading}
+    </h2>
+    <p class="mt-2 text-base leading-relaxed text-muted-foreground">
+      {offTheClock.text}
+    </p>
+  </div>
+</section>

@@ -1,0 +1,15 @@
+---
+import ExternalLink from "@/components/ExternalLink.astro"
+import ThemeToggle from "@/components/ThemeToggle.astro"
+import { site } from "@/content/site"
+---
+
+<header class="mx-auto flex w-full max-w-[1120px] items-center justify-between px-6 py-5 sm:px-8">
+  <p class="font-heading text-lg font-semibold tracking-tight">{site.name}</p>
+  <div class="flex items-center gap-3">
+    <ExternalLink href={site.github.href} class="text-[0.95rem] font-medium">
+      {site.github.label}
+    </ExternalLink>
+    <ThemeToggle />
+  </div>
+</header>

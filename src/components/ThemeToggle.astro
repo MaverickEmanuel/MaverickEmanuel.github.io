@@ -5,15 +5,15 @@ import { Button } from "@/components/ui/button"
 {/*
   Rendered server-side only (no client:* directive). Icons show the theme the
   button will switch TO, driven purely by the `.dark` class (no JS, no flash).
-  The label is corrected by the inline script below as soon as the button is
-  parsed, then kept in sync on every change.
+  The static label matches the dark default; the inline script below keeps it
+  in sync on every change. Hidden when scripts are off (see Base.astro).
 */}
 <Button
   id="theme-toggle"
   type="button"
   variant="ghost"
   size="icon-lg"
-  aria-label="Switch to dark theme"
+  aria-label="Switch to light theme"
 >
   <svg
     class="dark:hidden"
@@ -57,16 +57,7 @@ import { Button } from "@/components/ui/button"
     var button = document.getElementById("theme-toggle")
     if (!button) return
     var root = document.documentElement
-    var query = matchMedia("(prefers-color-scheme: dark)")
-
-    function stored() {
-      try {
-        var value = localStorage.getItem("theme")
-        return value === "light" || value === "dark" ? value : null
-      } catch (e) {
-        return null
-      }
-    }
+    var themeColor = document.getElementById("theme-color")
 
     function apply(theme) {
       root.classList.toggle("dark", theme === "dark")
@@ -75,6 +66,8 @@ import { Button } from "@/components/ui/button"
         "aria-label",
         theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
       )
+      if (themeColor)
+        themeColor.setAttribute("content", theme === "dark" ? "#1B1917" : "#FAF6EE")
     }
 
     apply(root.classList.contains("dark") ? "dark" : "light")
@@ -85,11 +78,6 @@ import { Button } from "@/components/ui/button"
       try {
         localStorage.setItem("theme", next)
       } catch (e) {}
-    })
-
-    // Follow the system until the visitor makes an explicit choice.
-    query.addEventListener("change", function (event) {
-      if (stored() === null) apply(event.matches ? "dark" : "light")
     })
   })()
 </script>

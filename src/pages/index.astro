@@ -1,28 +1,21 @@
 ---
 import Base from "@/layouts/Base.astro"
-import ThemeToggle from "@/components/ThemeToggle.astro"
+import SiteHeader from "@/components/SiteHeader.astro"
+import Hero from "@/components/Hero.astro"
+import Work from "@/components/Work.astro"
+import Experience from "@/components/Experience.astro"
+import OffTheClock from "@/components/OffTheClock.astro"
+import SiteFooter from "@/components/SiteFooter.astro"
+import { site } from "@/content/site"
 ---
 
-<Base>
-  <header class="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-    <p class="font-semibold">Maverick Emanuel</p>
-    <ThemeToggle />
-  </header>
-
-  <main id="main" class="mx-auto max-w-3xl px-6">
-    <section id="intro" aria-labelledby="intro-heading">
-      <h1 id="intro-heading">Intro</h1>
-    </section>
-    <section id="work" aria-labelledby="work-heading">
-      <h2 id="work-heading">Work</h2>
-    </section>
-    <section id="experience" aria-labelledby="experience-heading">
-      <h2 id="experience-heading">Experience</h2>
-    </section>
-    <section id="off-the-clock" aria-labelledby="off-the-clock-heading">
-      <h2 id="off-the-clock-heading">Off the clock</h2>
-    </section>
+<Base title={site.title} description={site.description}>
+  <SiteHeader />
+  <main id="main">
+    <Hero />
+    <Work />
+    <Experience />
+    <OffTheClock />
   </main>
-
-  <footer class="mx-auto max-w-3xl px-6 py-8"></footer>
+  <SiteFooter />
 </Base>

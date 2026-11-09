@@ -1,38 +1,60 @@
 ---
 import "../styles/global.css"
+import interUrl from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url"
+import instrumentUrl from "@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2?url"
+
+interface Props {
+  title: string
+  description: string
+}
+
+const { title, description } = Astro.props
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="dark light" />
+    <meta id="theme-color" name="theme-color" content="#1B1917" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="preload" href={interUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={instrumentUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <!--
-      Render-blocking on purpose: sets the `dark` class before first paint.
-      Saved choice (localStorage "theme": "light" | "dark") wins, otherwise the
-      system preference. Must stay above any stylesheet-dependent paint.
+      Dark is the default (and the no-JS state: the class is in the markup).
+      Render-blocking on purpose: a saved choice of "light" (localStorage
+      "theme") removes the class before first paint. System preference is
+      deliberately ignored.
     -->
     <script is:inline>
       (function () {
-        var theme = null
+        var theme = "dark"
         try {
-          theme = localStorage.getItem("theme")
+          if (localStorage.getItem("theme") === "light") theme = "light"
         } catch (e) {}
-        if (theme !== "light" && theme !== "dark") {
-          theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-        }
         var root = document.documentElement
         root.classList.toggle("dark", theme === "dark")
         root.style.colorScheme = theme
+        document
+          .getElementById("theme-color")
+          .setAttribute("content", theme === "dark" ? "#1B1917" : "#FAF6EE")
       })()
     </script>
-    <title>Maverick Emanuel</title>
+    <noscript>
+      <style>
+        #theme-toggle {
+          display: none;
+        }
+      </style>
+    </noscript>
   </head>
   <body class="min-h-screen">
     <a
       href="#main"
-      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-background focus-visible:px-3 focus-visible:py-2 focus-visible:text-foreground focus-visible:ring-3 focus-visible:ring-ring"
+      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-background focus-visible:px-3 focus-visible:py-2 focus-visible:text-foreground"
     >
       Skip to content
     </a>

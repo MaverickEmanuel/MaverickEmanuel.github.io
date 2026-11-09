@@ -1,13 +1,14 @@
 /*
- * ---------------------------------------------------------------------------
- * PALETTE PLACEHOLDER
- * Every colour below is a neutral placeholder. The real palette replaces the
- * values in :root (light) and .dark (dark) only. Components consume the
- * semantic tokens (bg-background, text-muted-foreground, ...), never raw
- * colours, so nothing else should need to change.
+ * Design tokens. Light is the :root block, dark is .dark (the site defaults to
+ * dark; see Base.astro). Components consume the semantic tokens only
+ * (bg-background, text-muted-foreground, ...), never raw colours.
  *
- * Fonts: swap the single --font-sans value in the @theme block below.
- * ---------------------------------------------------------------------------
+ * shadcn mapping: --primary and --ring are the accent colour (links, focus
+ * ring, primary button). --accent/--muted/--secondary are the quiet warm
+ * surface used for tags and hover states.
+ *
+ * The decorative washes are derived from the golden-hour and copper-shadow
+ * gradients of Aura Gradients (MIT); see THIRD_PARTY_NOTICES.md.
  */
 @import "tailwindcss";
 
@@ -16,14 +17,15 @@
 /* Design tokens that generate utilities and are emitted as :root variables. */
 @theme {
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+    "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading:
+    "Instrument Sans Variable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Map semantic CSS variables to Tailwind colour/radius utilities. */
 @theme inline {
-  --font-heading: var(--font-sans);
-
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -52,72 +54,321 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Self-hosted fonts: latin subset only, variable, font-display: swap. */
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Instrument Sans Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url("@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   color-scheme: light;
 
   --radius: 0.625rem;
 
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --background: #faf6ee;
+  --foreground: #27211b;
+  --card: #fffdf8;
+  --card-foreground: #27211b;
+  --popover: #fffdf8;
+  --popover-foreground: #27211b;
+  --primary: #a3470c;
+  --primary-foreground: #fffdf8;
+  --secondary: #f1e7d8;
+  --secondary-foreground: #27211b;
+  --muted: #f1e7d8;
+  --muted-foreground: #6b6157;
+  --accent: #f1e7d8;
+  --accent-foreground: #27211b;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: #e6ddcf;
+  --input: #e6ddcf;
+  --ring: #a3470c;
 
-  /* Custom tokens for later milestones (use as var(--wash-hero) etc.). */
-  --wash-hero: none; /* gradient wash behind the hero (background-image) */
-  --wash-media: none; /* gradient wash behind media/screenshots */
-  --shadow-media: none; /* box-shadow for media/screenshots */
+  /* Portrait placeholder and frame. */
+  --portrait-fill: #cfc6b8;
+  --portrait-ink: rgb(39 33 27 / 0.22);
+  --shadow-portrait: 0 18px 40px -18px rgb(60 40 20 / 0.3);
+
+  /* Media panel. */
+  --panel-base: #fbf1e2;
+  --logo-ink: #27211b;
+  --window-bar: #efe6d8;
+  --shadow-media:
+    0 28px 50px -18px rgb(60 40 20 / 0.35), 0 6px 14px -6px rgb(60 40 20 / 0.2);
+
+  /* Hero wash: static, very low contrast, plain alpha radial gradients. It is
+     laid out in a box centred on the portrait and is fully faded before the
+     text column. */
+  --wash-hero:
+    radial-gradient(
+      ellipse 250px 300px at 50% 46%,
+      rgb(255 183 77 / 0.2) 0%,
+      rgb(255 183 77 / 0.11) 42%,
+      rgb(255 183 77 / 0) 100%
+    ),
+    radial-gradient(
+      ellipse 240px 250px at 64% 70%,
+      rgb(255 138 61 / 0.15) 0%,
+      rgb(255 138 61 / 0.075) 45%,
+      rgb(255 138 61 / 0) 100%
+    ),
+    radial-gradient(
+      ellipse 230px 220px at 56% 22%,
+      rgb(183 77 0 / 0.1) 0%,
+      rgb(183 77 0 / 0) 100%
+    );
+
+  /* Media backdrop: the same family, richer. -alt mirrors it for rows whose
+     media sits on the right. */
+  --wash-media:
+    radial-gradient(
+      ellipse 90% 85% at 12% 8%,
+      rgb(255 183 77 / 0.62) 0%,
+      rgb(255 183 77 / 0) 72%
+    ),
+    radial-gradient(
+      ellipse 80% 80% at 92% 22%,
+      rgb(255 138 61 / 0.5) 0%,
+      rgb(255 138 61 / 0) 74%
+    ),
+    radial-gradient(
+      ellipse 100% 90% at 68% 108%,
+      rgb(183 77 0 / 0.42) 0%,
+      rgb(183 77 0 / 0) 76%
+    );
+  --wash-media-alt:
+    radial-gradient(
+      ellipse 90% 85% at 88% 6%,
+      rgb(255 183 77 / 0.62) 0%,
+      rgb(255 183 77 / 0) 72%
+    ),
+    radial-gradient(
+      ellipse 80% 80% at 8% 30%,
+      rgb(255 138 61 / 0.5) 0%,
+      rgb(255 138 61 / 0) 74%
+    ),
+    radial-gradient(
+      ellipse 100% 90% at 34% 108%,
+      rgb(183 77 0 / 0.42) 0%,
+      rgb(183 77 0 / 0) 76%
+    );
 }
 
 .dark {
   color-scheme: dark;
 
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: #1b1917;
+  --foreground: #efe7db;
+  --card: #242120;
+  --card-foreground: #efe7db;
+  --popover: #242120;
+  --popover-foreground: #efe7db;
+  --primary: #e8a066;
+  --primary-foreground: #1b1917;
+  --secondary: #2c2723;
+  --secondary-foreground: #efe7db;
+  --muted: #2c2723;
+  --muted-foreground: #a89d90;
+  --accent: #2c2723;
+  --accent-foreground: #efe7db;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: #36312c;
+  --input: #36312c;
+  --ring: #e8a066;
 
-  --wash-hero: none;
-  --wash-media: none;
-  --shadow-media: none;
+  --portrait-fill: #4a443d;
+  --portrait-ink: rgb(239 231 219 / 0.2);
+  --shadow-portrait:
+    0 0 0 1px rgb(255 255 255 / 0.03), 0 18px 50px -22px rgb(232 160 102 / 0.2);
+
+  --panel-base: #2a2522;
+  --logo-ink: #efe7db;
+  --window-bar: #302b27;
+  --shadow-media:
+    0 0 0 1px rgb(255 255 255 / 0.04), 0 24px 60px -24px rgb(232 160 102 / 0.22);
+
+  --wash-hero:
+    radial-gradient(
+      ellipse 250px 300px at 50% 46%,
+      rgb(127 72 39 / 0.3) 0%,
+      rgb(127 72 39 / 0.165) 42%,
+      rgb(127 72 39 / 0) 100%
+    ),
+    radial-gradient(
+      ellipse 240px 250px at 64% 70%,
+      rgb(160 91 45 / 0.22) 0%,
+      rgb(160 91 45 / 0.11) 45%,
+      rgb(160 91 45 / 0) 100%
+    ),
+    radial-gradient(
+      ellipse 230px 220px at 56% 22%,
+      rgb(194 119 69 / 0.14) 0%,
+      rgb(194 119 69 / 0) 100%
+    );
+
+  --wash-media:
+    radial-gradient(
+      ellipse 90% 85% at 12% 8%,
+      rgb(127 72 39 / 0.85) 0%,
+      rgb(127 72 39 / 0) 72%
+    ),
+    radial-gradient(
+      ellipse 80% 80% at 92% 22%,
+      rgb(160 91 45 / 0.7) 0%,
+      rgb(160 91 45 / 0) 74%
+    ),
+    radial-gradient(
+      ellipse 100% 90% at 68% 108%,
+      rgb(194 119 69 / 0.5) 0%,
+      rgb(194 119 69 / 0) 76%
+    );
+  --wash-media-alt:
+    radial-gradient(
+      ellipse 90% 85% at 88% 6%,
+      rgb(127 72 39 / 0.85) 0%,
+      rgb(127 72 39 / 0) 72%
+    ),
+    radial-gradient(
+      ellipse 80% 80% at 8% 30%,
+      rgb(160 91 45 / 0.7) 0%,
+      rgb(160 91 45 / 0) 74%
+    ),
+    radial-gradient(
+      ellipse 100% 90% at 34% 108%,
+      rgb(194 119 69 / 0.5) 0%,
+      rgb(194 119 69 / 0) 76%
+    );
+}
+
+@utility text-label {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    overflow-x: clip;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    font-weight: 400;
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+  }
+  h1 {
+    font-size: clamp(2.25rem, 4.6vw, 3.5rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  /* Body links: accent colour, underline with offset, clear hover state. */
+  .link {
+    color: var(--primary);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.22em;
+    transition:
+      color 150ms ease,
+      text-decoration-thickness 150ms ease;
+  }
+  .link:hover {
+    color: color-mix(in srgb, var(--primary) 78%, var(--foreground));
+    text-decoration-thickness: 2px;
+  }
+
+  /* Media panel: rounded backdrop with the richer wash. */
+  .media-panel {
+    position: relative;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    background-color: var(--panel-base);
+    background-image: var(--wash-media);
+  }
+  .media-panel[data-flip] {
+    background-image: var(--wash-media-alt);
+  }
+
+  /* Hero wash: a box centred on the portrait, behind everything. */
+  .hero-wash {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 880px;
+    height: 860px;
+    transform: translate(-50%, -50%);
+    background-image: var(--wash-hero);
+    pointer-events: none;
+    z-index: 0;
+  }
+  @media (max-width: 1023px) {
+    .hero-wash {
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+  }
+  @media (max-width: 767px) {
+    .hero-wash {
+      transform: translate(-50%, -50%) scale(0.7);
+    }
+  }
+}
+
+/* Focus ring on every interactive element, both themes. Unlayered so it also
+   wins over component utilities such as the button's outline-none. */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+video:focus-visible {
+  outline-offset: 2px;
+}
+
+/* One short entrance (CSS only). Content is fully visible without it. */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .enter {
+    animation: enter 400ms ease-out both;
   }
 }
 

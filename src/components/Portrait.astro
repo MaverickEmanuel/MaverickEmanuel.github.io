@@ -1,0 +1,38 @@
+---
+import { Image } from "astro:assets"
+import { site } from "@/content/site"
+
+const portrait = site.portrait
+---
+
+{/*
+  4:5 frame with reserved dimensions (no layout shift). Driven by
+  site.portrait: null renders the monogram placeholder, an imported image
+  renders through Astro's <Image>.
+*/}
+<div
+  class="aspect-[4/5] w-full overflow-hidden rounded-[20px] border border-border bg-[var(--portrait-fill)] shadow-[var(--shadow-portrait)]"
+>
+  {
+    portrait ? (
+      <Image
+        src={portrait.image}
+        alt={portrait.alt}
+        width={600}
+        height={750}
+        widths={[160, 320, 600]}
+        sizes="(min-width: 1024px) 300px, (min-width: 768px) 220px, 10rem"
+        format="webp"
+        class="h-full w-full object-cover"
+        loading="eager"
+      />
+    ) : (
+      <div
+        class="grid h-full w-full place-items-center font-heading text-[clamp(3rem,6vw,4.5rem)] font-semibold tracking-tight text-[var(--portrait-ink)]"
+        aria-hidden="true"
+      >
+        ME
+      </div>
+    )
+  }
+</div>

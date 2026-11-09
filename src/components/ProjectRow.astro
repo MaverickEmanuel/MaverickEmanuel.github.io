@@ -1,0 +1,70 @@
+---
+import ExternalLink from "@/components/ExternalLink.astro"
+import ProjectMedia from "@/components/ProjectMedia.astro"
+import { site, type Project } from "@/content/site"
+
+interface Props {
+  project: Project
+  /** Media on the right (desktop). Stacked layouts always show media first. */
+  flip?: boolean
+}
+
+const { project, flip = false } = Astro.props
+const { labels } = site
+const facts = [
+  { label: labels.problem, text: project.problem },
+  { label: labels.built, text: project.built },
+  { label: labels.why, text: project.why },
+]
+---
+
+<article
+  class:list={[
+    "enter grid items-center gap-8 lg:gap-16",
+    flip
+      ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.18fr)]"
+      : "lg:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)]",
+  ]}
+  aria-labelledby={`${project.id}-title`}
+>
+  <div class:list={["w-full max-w-xl lg:max-w-none", flip && "lg:order-2"]}>
+    <ProjectMedia media={project.media} flip={flip} />
+  </div>
+
+  <div class="min-w-0">
+    <h3
+      id={`${project.id}-title`}
+      class="text-[clamp(1.75rem,3vw,2.25rem)] leading-[1.1] tracking-[-0.02em]"
+    >
+      {project.title}
+    </h3>
+    <p class="mt-2.5 text-[0.9375rem] leading-normal text-muted-foreground">
+      {project.meta}
+    </p>
+
+    <dl class="mt-7 space-y-5">
+      {
+        facts.map((fact) => (
+          <div>
+            <dt class="mb-0.5 text-label">{fact.label}</dt>
+            <dd class="m-0 max-w-[62ch] text-base leading-relaxed">{fact.text}</dd>
+          </div>
+        ))
+      }
+    </dl>
+
+    <ul class="mt-7 flex list-none flex-wrap gap-2 p-0" aria-label="Technologies">
+      {
+        project.tags.map((tag) => (
+          <li class="rounded-[7px] bg-secondary px-2.5 py-1 text-label text-secondary-foreground">
+            {tag}
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="mt-6 font-medium">
+      <ExternalLink href={project.link.href}>{project.link.label}</ExternalLink>
+    </p>
+  </div>
+</article>

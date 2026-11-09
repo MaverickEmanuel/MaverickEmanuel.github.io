@@ -1,0 +1,46 @@
+---
+import { site } from "@/content/site"
+
+const { experience } = site
+---
+
+<section
+  id="experience"
+  aria-labelledby="experience-heading"
+  class="mx-auto w-full max-w-[1120px] px-6 pb-24 sm:px-8 md:pb-32"
+>
+  <h2
+    id="experience-heading"
+    class="mb-8 flex items-center gap-5 text-[clamp(1.5rem,2.4vw,1.875rem)] tracking-[-0.02em] after:h-px after:flex-1 after:bg-border after:content-['']"
+  >
+    {experience.heading}
+  </h2>
+  <ul class="m-0 list-none p-0">
+    {
+      experience.entries.map((entry) => (
+        <li class="border-t border-border py-5 last:border-b">
+          <div class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-8">
+            <p class="m-0 max-w-[40rem] font-medium">
+              {entry.title}
+              {entry.organization && (
+                <span class="block font-normal text-muted-foreground">
+                  {entry.organization}
+                </span>
+              )}
+            </p>
+            {entry.dates && (
+              <p class="m-0 text-[0.9375rem] whitespace-nowrap text-muted-foreground tabular-nums">
+                {entry.dates}
+              </p>
+            )}
+          </div>
+          {entry.description && (
+            <p class="mt-2 mb-0 max-w-[62ch] text-base text-muted-foreground">
+              {entry.description}
+            </p>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</section>

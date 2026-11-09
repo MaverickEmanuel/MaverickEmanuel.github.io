@@ -1,0 +1,91 @@
+---
+import { Image } from "astro:assets"
+import type { ProjectMedia } from "@/content/site"
+
+interface Props {
+  media: ProjectMedia
+  /** Mirror the backdrop wash for rows whose media sits on the right. */
+  flip?: boolean
+}
+
+const { media, flip = false } = Astro.props
+
+// The logo SVG ships with a fixed white wordmark fill; hand it to the theme.
+// (Inlined so the fill can follow --logo-ink in both themes.)
+const logoSvg =
+  media.kind === "logo"
+    ? media.svg.replace("<svg ", '<svg class="block h-auto w-full" ')
+    : ""
+---
+
+<figure class="m-0">
+  <div
+    class:list={[
+      "media-panel",
+      media.kind === "logo" && "grid aspect-[16/10] place-items-center p-8",
+      media.kind === "screenshot" && "p-5 sm:p-8 lg:p-10",
+      media.kind === "video" && "p-4 sm:p-8 lg:p-10",
+    ]}
+    data-flip={flip ? "" : undefined}
+  >
+    {
+      media.kind === "logo" && (
+        <div
+          role="img"
+          aria-label={media.label}
+          class="w-[min(58%,20rem)]"
+          set:html={logoSvg}
+        />
+      )
+    }
+
+    {
+      media.kind === "screenshot" && (
+        <div
+          class="overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-media)]"
+        >
+          <div
+            class="flex h-8 items-center gap-1.5 border-b border-border bg-[var(--window-bar)] px-3.5"
+            aria-hidden="true"
+          >
+            <i class="block size-2.5 rounded-full bg-muted-foreground/50" />
+            <i class="block size-2.5 rounded-full bg-muted-foreground/50" />
+            <i class="block size-2.5 rounded-full bg-muted-foreground/50" />
+          </div>
+          <Image
+            src={media.image}
+            alt={media.alt}
+            widths={[640, 960, 1280, 1920]}
+            sizes="(min-width: 1024px) 560px, 90vw"
+            format="webp"
+            class="block h-auto w-full"
+          />
+        </div>
+      )
+    }
+
+    {
+      media.kind === "video" && (
+        <video
+          controls
+          preload="none"
+          playsinline
+          poster={media.poster}
+          width={media.width}
+          height={media.height}
+          aria-label={media.label}
+          class="block aspect-video h-auto w-full rounded-xl bg-[var(--panel-base)] shadow-[var(--shadow-media)]"
+        >
+          <source src={media.src} type="video/mp4" />
+        </video>
+      )
+    }
+  </div>
+  {
+    media.kind === "video" && (
+      <figcaption class="mt-3 text-label text-muted-foreground">
+        {media.caption}
+      </figcaption>
+    )
+  }
+</figure>
