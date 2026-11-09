@@ -36,6 +36,8 @@ system colour-scheme preference is not used.
 All copy lives in `src/content/site.ts`. Components only render from it.
 
 - **Text, links, tags, experience:** edit the matching fields in `site.ts`.
+- **Profile links (GitHub, LinkedIn):** the `profiles` list near the top of
+  `site.ts`; it feeds both the header and the footer, in that order.
 - **Add the portrait:** put the image in `src/assets/` (for example
   `portrait.jpg`, ideally 4:5 and at least 600 x 750), add
   `import portraitImage from "@/assets/portrait.jpg"` at the top of `site.ts`,

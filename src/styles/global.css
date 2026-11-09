@@ -111,7 +111,7 @@
 
   /* Portrait placeholder and frame. */
   --portrait-fill: #cfc6b8;
-  --portrait-ink: rgb(39 33 27 / 0.22);
+  --portrait-ink: #736b62; /* 3.10:1 on --portrait-fill */
   --shadow-portrait: 0 18px 40px -18px rgb(60 40 20 / 0.3);
 
   /* Media panel. */
@@ -227,7 +227,7 @@
   --ring: #e8a066;
 
   --portrait-fill: #4a443d;
-  --portrait-ink: rgb(239 231 219 / 0.2);
+  --portrait-ink: #989187; /* 3.08:1 on --portrait-fill */
   --shadow-portrait:
     0 0 0 1px rgb(255 255 255 / 0.03), 0 18px 50px -22px rgb(232 160 102 / 0.2);
 
@@ -414,8 +414,20 @@
   outline: 2px solid var(--ring);
   outline-offset: 3px;
 }
+/* Video: a two-tone ring. The accent outline sits 3px off the player; the
+   page-background colour fills the gap and a 3px halo outside it (a box-shadow,
+   which also replaces the drop shadow while focused), so the ring contrasts
+   with the page background rather than the tinted panel behind it. */
 video:focus-visible {
-  outline-offset: 2px;
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 9px var(--background);
+}
+
+/* Skip-link target: focusable (tabindex="-1") but not a keyboard stop, so it
+   gets no ring of its own. */
+main:focus {
+  outline: none;
 }
 
 /* One short entrance (CSS only). Content is fully visible without it. */

@@ -18,11 +18,14 @@ const logoSvg =
     : ""
 ---
 
-<figure class="m-0">
+<figure class:list={["m-0", media.kind === "logo" && "lg:flex lg:flex-1 lg:flex-col"]}>
   <div
     class:list={[
       "media-panel",
-      media.kind === "logo" && "grid aspect-[16/10] place-items-center p-8",
+      // 16:10 when stacked. On desktop the panel fills the row height, with
+      // 16:10 of its own width (100cqw, the column) as the floor.
+      media.kind === "logo" &&
+        "grid aspect-[16/10] place-items-center p-8 lg:aspect-auto lg:flex-1 lg:min-h-[calc(100cqw*0.625)]",
       media.kind === "screenshot" && "p-5 sm:p-8 lg:p-10",
       media.kind === "video" && "p-4 sm:p-8 lg:p-10",
     ]}
@@ -68,6 +71,7 @@ const logoSvg =
       media.kind === "video" && (
         <video
           controls
+          muted
           preload="none"
           playsinline
           poster={media.poster}

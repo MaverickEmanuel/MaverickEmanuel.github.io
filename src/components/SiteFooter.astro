@@ -7,9 +7,17 @@ const { footer } = site
 
 <footer class="mx-auto w-full max-w-[1120px] px-6 sm:px-8">
   <div
-    class="flex items-center justify-between gap-4 border-t border-border py-8 text-sm text-muted-foreground"
+    class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-border py-8 text-sm text-muted-foreground"
   >
     <p class="m-0">{footer.copyright}</p>
-    <ExternalLink href={footer.github.href}>{footer.github.label}</ExternalLink>
+    <div class="flex items-center gap-x-5">
+      {
+        footer.profiles.map((profile) => (
+          <ExternalLink href={profile.href} class="py-1">
+            {profile.label}
+          </ExternalLink>
+        ))
+      }
+    </div>
   </div>
 </footer>

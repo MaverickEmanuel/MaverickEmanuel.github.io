@@ -4,12 +4,29 @@ import ThemeToggle from "@/components/ThemeToggle.astro"
 import { site } from "@/content/site"
 ---
 
-<header class="mx-auto flex w-full max-w-[1120px] items-center justify-between px-6 py-5 sm:px-8">
-  <p class="font-heading text-lg font-semibold tracking-tight">{site.name}</p>
-  <div class="flex items-center gap-3">
-    <ExternalLink href={site.github.href} class="text-[0.95rem] font-medium">
-      {site.github.label}
-    </ExternalLink>
+{/*
+  Narrow screens (< 30rem): name and theme toggle share the first row, the
+  profile links sit on a second row under the name. From 30rem up everything
+  is one row: name left, links and toggle right.
+*/}
+<header
+  class="mx-auto grid w-full max-w-[1120px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-6 py-4 min-[30rem]:flex min-[30rem]:justify-between min-[30rem]:py-5 sm:px-8"
+>
+  <p class="font-heading text-lg font-semibold tracking-tight min-[30rem]:mr-auto">
+    {site.name}
+  </p>
+  <div
+    class="col-span-2 row-start-2 flex items-center gap-x-5 min-[30rem]:col-auto min-[30rem]:row-auto min-[30rem]:mr-3"
+  >
+    {
+      site.profiles.map((profile) => (
+        <ExternalLink href={profile.href} class="py-1.5 text-[0.95rem] font-medium">
+          {profile.label}
+        </ExternalLink>
+      ))
+    }
+  </div>
+  <div class="col-start-2 row-start-1 min-[30rem]:col-auto min-[30rem]:row-auto">
     <ThemeToggle />
   </div>
 </header>

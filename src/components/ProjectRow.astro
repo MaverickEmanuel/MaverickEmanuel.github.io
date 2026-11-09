@@ -27,7 +27,15 @@ const facts = [
   ]}
   aria-labelledby={`${project.id}-title`}
 >
-  <div class:list={["w-full max-w-xl lg:max-w-none", flip && "lg:order-2"]}>
+  <div
+    class:list={[
+      "w-full max-w-xl lg:max-w-none",
+      flip && "lg:order-2",
+      // Logo panels fill the row height on desktop; other media keep their
+      // natural shape, top-aligned. The container unit sizes the 16:10 floor.
+      project.media.kind === "logo" && "@container lg:flex lg:self-stretch",
+    ]}
+  >
     <ProjectMedia media={project.media} flip={flip} />
   </div>
 

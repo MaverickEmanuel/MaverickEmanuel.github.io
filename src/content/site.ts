@@ -56,7 +56,8 @@ export interface SiteContent {
   title: string
   description: string
   name: string
-  github: Link
+  /** Public profile links, shown in order in the header and the footer. */
+  profiles: Link[]
   hero: {
     greeting: string
     headline: string
@@ -67,7 +68,7 @@ export interface SiteContent {
   work: { heading: string; projects: Project[] }
   experience: { heading: string; entries: ExperienceEntry[] }
   offTheClock: { heading: string; text: string }
-  footer: { copyright: string; github: Link }
+  footer: { copyright: string; profiles: Link[] }
   labels: { problem: string; built: string; why: string }
 }
 
@@ -111,12 +112,18 @@ export function roflowScreenshotMedia(): ProjectMedia {
   }
 }
 
+/** The only public contact channels. Order is the display order. */
+const profiles: Link[] = [
+  { label: "GitHub", href: "https://github.com/MaverickEmanuel" },
+  { label: "LinkedIn", href: "https://www.linkedin.com/in/maverick-emanuel/" },
+]
+
 export const site: SiteContent = {
   title: "Maverick Emanuel · Software engineer",
   description:
     "Maverick Emanuel is a software engineer in Toronto who builds AI systems and the software that makes them useful.",
   name: "Maverick Emanuel",
-  github: { label: "GitHub", href: "https://github.com/MaverickEmanuel" },
+  profiles,
 
   hero: {
     greeting: "Hi, I'm Maverick.",
@@ -218,6 +225,6 @@ export const site: SiteContent = {
 
   footer: {
     copyright: "© 2026 Maverick Emanuel",
-    github: { label: "GitHub", href: "https://github.com/MaverickEmanuel" },
+    profiles,
   },
 }
