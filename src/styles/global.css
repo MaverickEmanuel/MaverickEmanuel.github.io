@@ -109,6 +109,9 @@
   --input: #e6ddcf;
   --ring: #a3470c;
 
+  /* Small tracked labels: the accent, pulled toward the muted text colour. */
+  --label-ink: color-mix(in srgb, var(--primary) 68%, var(--muted-foreground));
+
   /* Portrait placeholder and frame. */
   --portrait-fill: #cfc6b8;
   --portrait-ink: #736b62; /* 3.10:1 on --portrait-fill */
@@ -231,7 +234,7 @@
   --shadow-portrait:
     0 0 0 1px rgb(255 255 255 / 0.03), 0 18px 50px -22px rgb(232 160 102 / 0.2);
 
-  --panel-base: #2a2522;
+  --panel-base: #2e241f;
   --logo-ink: #efe7db;
   --window-bar: #302b27;
   --shadow-media:
@@ -281,38 +284,101 @@
       rgb(194 119 69 / 0.0000) 100%
     );
 
+  /* Fine monochrome grain over the media washes to break up 8-bit banding. */
+  --wash-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 .045'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
   --wash-media:
+    var(--wash-noise),
     radial-gradient(
-      ellipse 90% 85% at 12% 8%,
-      rgb(127 72 39 / 0.85) 0%,
-      rgb(127 72 39 / 0) 72%
+      ellipse 95% 90% at 12% 8%,
+      rgb(250 150 58 / 0.620) 0%,
+      rgb(250 150 58 / 0.597) 8%,
+      rgb(250 150 58 / 0.531) 17%,
+      rgb(250 150 58 / 0.433) 25%,
+      rgb(250 150 58 / 0.318) 34%,
+      rgb(250 150 58 / 0.205) 42%,
+      rgb(250 150 58 / 0.110) 51%,
+      rgb(250 150 58 / 0.042) 59%,
+      rgb(250 150 58 / 0.008) 68%,
+      rgb(250 150 58 / 0.000) 76%
     ),
     radial-gradient(
-      ellipse 80% 80% at 92% 22%,
-      rgb(160 91 45 / 0.7) 0%,
-      rgb(160 91 45 / 0) 74%
+      ellipse 85% 85% at 92% 22%,
+      rgb(232 108 50 / 0.520) 0%,
+      rgb(232 108 50 / 0.500) 9%,
+      rgb(232 108 50 / 0.445) 17%,
+      rgb(232 108 50 / 0.363) 26%,
+      rgb(232 108 50 / 0.267) 35%,
+      rgb(232 108 50 / 0.172) 43%,
+      rgb(232 108 50 / 0.092) 52%,
+      rgb(232 108 50 / 0.036) 61%,
+      rgb(232 108 50 / 0.007) 69%,
+      rgb(232 108 50 / 0.000) 78%
     ),
     radial-gradient(
-      ellipse 100% 90% at 68% 108%,
-      rgb(194 119 69 / 0.5) 0%,
-      rgb(194 119 69 / 0) 76%
+      ellipse 110% 95% at 68% 108%,
+      rgb(204 84 36 / 0.550) 0%,
+      rgb(204 84 36 / 0.529) 9%,
+      rgb(204 84 36 / 0.471) 18%,
+      rgb(204 84 36 / 0.384) 27%,
+      rgb(204 84 36 / 0.282) 36%,
+      rgb(204 84 36 / 0.182) 44%,
+      rgb(204 84 36 / 0.097) 53%,
+      rgb(204 84 36 / 0.038) 62%,
+      rgb(204 84 36 / 0.007) 71%,
+      rgb(204 84 36 / 0.000) 80%
     );
   --wash-media-alt:
+    var(--wash-noise),
     radial-gradient(
-      ellipse 90% 85% at 88% 6%,
-      rgb(127 72 39 / 0.85) 0%,
-      rgb(127 72 39 / 0) 72%
+      ellipse 95% 90% at 88% 6%,
+      rgb(250 150 58 / 0.620) 0%,
+      rgb(250 150 58 / 0.597) 8%,
+      rgb(250 150 58 / 0.531) 17%,
+      rgb(250 150 58 / 0.433) 25%,
+      rgb(250 150 58 / 0.318) 34%,
+      rgb(250 150 58 / 0.205) 42%,
+      rgb(250 150 58 / 0.110) 51%,
+      rgb(250 150 58 / 0.042) 59%,
+      rgb(250 150 58 / 0.008) 68%,
+      rgb(250 150 58 / 0.000) 76%
     ),
     radial-gradient(
-      ellipse 80% 80% at 8% 30%,
-      rgb(160 91 45 / 0.7) 0%,
-      rgb(160 91 45 / 0) 74%
+      ellipse 85% 85% at 8% 30%,
+      rgb(232 108 50 / 0.520) 0%,
+      rgb(232 108 50 / 0.500) 9%,
+      rgb(232 108 50 / 0.445) 17%,
+      rgb(232 108 50 / 0.363) 26%,
+      rgb(232 108 50 / 0.267) 35%,
+      rgb(232 108 50 / 0.172) 43%,
+      rgb(232 108 50 / 0.092) 52%,
+      rgb(232 108 50 / 0.036) 61%,
+      rgb(232 108 50 / 0.007) 69%,
+      rgb(232 108 50 / 0.000) 78%
     ),
     radial-gradient(
-      ellipse 100% 90% at 34% 108%,
-      rgb(194 119 69 / 0.5) 0%,
-      rgb(194 119 69 / 0) 76%
+      ellipse 110% 95% at 34% 108%,
+      rgb(204 84 36 / 0.550) 0%,
+      rgb(204 84 36 / 0.529) 9%,
+      rgb(204 84 36 / 0.471) 18%,
+      rgb(204 84 36 / 0.384) 27%,
+      rgb(204 84 36 / 0.282) 36%,
+      rgb(204 84 36 / 0.182) 44%,
+      rgb(204 84 36 / 0.097) 53%,
+      rgb(204 84 36 / 0.038) 62%,
+      rgb(204 84 36 / 0.007) 71%,
+      rgb(204 84 36 / 0.000) 80%
     );
+}
+
+/* Small uppercase label tinted with a muted accent (project facts, lists). */
+@utility eyebrow {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--label-ink);
 }
 
 @utility text-label {
@@ -370,6 +436,39 @@
   .link:hover {
     color: color-mix(in srgb, var(--primary) 78%, var(--foreground));
     text-decoration-thickness: 2px;
+  }
+
+  /* Primary project link: accent pill. */
+  .link-button {
+    padding: 0.625rem 1.125rem;
+    border-radius: 9999px;
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 0.9375rem;
+    line-height: 1.25;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 150ms ease;
+  }
+  .link-button:hover {
+    background-color: color-mix(in srgb, var(--primary) 86%, var(--foreground));
+  }
+
+  /* Section h2: one size for every section, hairline fills the rest. */
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .section-heading::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background-color: var(--border);
+    transform-origin: left center;
   }
 
   /* Media panel: rounded backdrop with the richer wash. */
@@ -430,16 +529,99 @@ main:focus {
   outline: none;
 }
 
-/* One short entrance (CSS only). Content is fully visible without it. */
-@keyframes enter {
+/*
+ * Entrance motion (CSS side). Hidden "before" states exist only under
+ * html.js-motion, which the head script sets before first paint when the
+ * browser has IntersectionObserver and reduced motion is not requested; it is
+ * dropped again by the failsafes (see Base.astro). Without it nothing is ever
+ * hidden. Only opacity and transforms move, so there is no layout shift.
+ */
+:root {
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .enter {
-    animation: enter 400ms ease-out both;
+  /* Hero, on load: staggered by --d (greeting 0, h1 80, text 160, portrait 240). */
+  .js-motion .hero-rise {
+    animation: rise 500ms var(--ease-out) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .js-motion .hero-fade {
+    animation: fade 500ms var(--ease-out) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .js-motion .hero-wash {
+    animation: fade 900ms ease-out both;
+  }
+
+  /* Below the fold: the script adds .is-visible once per [data-reveal]. */
+  .js-motion [data-reveal="line"]::after {
+    transform: scaleX(0);
+    transition: transform 500ms var(--ease-out);
+  }
+  .js-motion [data-reveal="line"].is-visible::after {
+    transform: none;
+  }
+
+  .js-motion [data-reveal="fade"],
+  .js-motion [data-reveal="row"] .row-media,
+  .js-motion [data-reveal="row"] .row-text {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 550ms var(--ease-out),
+      transform 550ms var(--ease-out);
+  }
+  /* Project rows: media first, text follows 100ms later. */
+  .js-motion [data-reveal="row"] .row-text {
+    transition-delay: 100ms;
+  }
+  .js-motion [data-reveal="fade"].is-visible,
+  .js-motion [data-reveal="row"].is-visible .row-media,
+  .js-motion [data-reveal="row"].is-visible .row-text {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Theme switch: plain root cross-fade (startViewTransition in ThemeToggle). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Print: everything visible, nothing animated. */
+@media print {
+  .hero-rise,
+  .hero-fade,
+  [data-reveal],
+  [data-reveal] .row-media,
+  [data-reveal] .row-text {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+  [data-reveal]::after {
+    transform: none !important;
   }
 }
 

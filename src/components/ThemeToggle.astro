@@ -72,9 +72,19 @@ import { Button } from "@/components/ui/button"
 
     apply(root.classList.contains("dark") ? "dark" : "light")
 
+    var reduceMotion = matchMedia("(prefers-reduced-motion: reduce)")
+
     button.addEventListener("click", function () {
       var next = root.classList.contains("dark") ? "light" : "dark"
-      apply(next)
+      // Plain root cross-fade (duration in global.css) where supported;
+      // otherwise, or with reduced motion, switch instantly.
+      if (document.startViewTransition && !reduceMotion.matches) {
+        document.startViewTransition(function () {
+          apply(next)
+        })
+      } else {
+        apply(next)
+      }
       try {
         localStorage.setItem("theme", next)
       } catch (e) {}

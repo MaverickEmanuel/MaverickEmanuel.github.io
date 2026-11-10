@@ -43,6 +43,31 @@ const { title, description } = Astro.props
           .setAttribute("content", theme === "dark" ? "#1B1917" : "#FAF6EE")
       })()
     </script>
+    <!--
+      Entrance motion is opt-in: the hidden "before" states in global.css only
+      exist under html.js-motion, which is set here before first paint, and only
+      when the browser can run the observer and has not asked for reduced
+      motion. Failsafes drop the class (everything shows at once) if the
+      observer script never reports in within 2.5s, and before printing.
+    -->
+    <script is:inline>
+      (function () {
+        var root = document.documentElement
+        if (
+          !("IntersectionObserver" in window) ||
+          matchMedia("(prefers-reduced-motion: reduce)").matches
+        )
+          return
+        root.classList.add("js-motion")
+        function reveal() {
+          root.classList.remove("js-motion")
+        }
+        setTimeout(function () {
+          if (!root.hasAttribute("data-motion-ready")) reveal()
+        }, 2500)
+        window.addEventListener("beforeprint", reveal)
+      })()
+    </script>
     <noscript>
       <style>
         #theme-toggle {
@@ -59,5 +84,29 @@ const { title, description } = Astro.props
       Skip to content
     </a>
     <slot />
+    <script is:inline>
+      // Scroll reveals: add .is-visible once per [data-reveal] element; the
+      // transitions live in global.css.
+      (function () {
+        var root = document.documentElement
+        if (!root.classList.contains("js-motion")) return
+        var io = new IntersectionObserver(
+          function (entries) {
+            root.setAttribute("data-motion-ready", "")
+            entries.forEach(function (entry) {
+              // Also reveal anything already scrolled past (reload, deep link).
+              if (entry.isIntersecting || entry.boundingClientRect.top < 0) {
+                entry.target.classList.add("is-visible")
+                io.unobserve(entry.target)
+              }
+            })
+          },
+          { threshold: 0.15 }
+        )
+        document.querySelectorAll("[data-reveal]").forEach(function (el) {
+          io.observe(el)
+        })
+      })()
+    </script>
   </body>
 </html>
