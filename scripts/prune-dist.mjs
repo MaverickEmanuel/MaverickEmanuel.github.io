@@ -1,7 +1,7 @@
 // Deletes JavaScript files in dist/_astro that nothing in the built output
 // uses. A file counts as used if a built HTML or CSS file references it, or
 // if another used JS file imports it (static or dynamic import(), so the
-// lazy-loaded island chunk stays: the view-switch script references it by
+// lazy-loaded city chunk stays: the view-switch script references it by
 // file name). Prints every file it removes.
 import { readdir, readFile, rm, stat } from "node:fs/promises"
 import path from "node:path"

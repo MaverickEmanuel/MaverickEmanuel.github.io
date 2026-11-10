@@ -1,5 +1,5 @@
 /**
- * Island layout maths shared by the scene, the player and the controls: the
+ * City layout maths shared by the scene, the player and the controls: the
  * ground height function, path and scenery placement, and the circle
  * colliders. No three.js here, so it stays cheap to reason about and test.
  */
@@ -55,7 +55,7 @@ export function groundHeight(x: number, z: number): number {
   return BASE_Y + Math.max(0, bumps) * flat
 }
 
-/** Small deterministic PRNG (mulberry32), so the island is the same every visit. */
+/** Small deterministic PRNG (mulberry32), so the city is the same every visit. */
 export function random(seed: number): () => number {
   let a = seed >>> 0
   return () => {

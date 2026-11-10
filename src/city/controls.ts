@@ -1,6 +1,6 @@
 /**
  * Input: WASD / arrow keys, Space to jump, E to use a station, click or tap
- * to walk, the on-screen joystick (touch devices only, see IslandShell.astro),
+ * to walk, the on-screen joystick (touch devices only, see CityShell.astro),
  * drag to orbit the follow camera, wheel or pinch to zoom.
  *
  * Keys are read from window but ignored while a dialog is open, while focus

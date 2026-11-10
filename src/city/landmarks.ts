@@ -1,17 +1,17 @@
 /**
- * The island's stations: one entry per landmark. Pure data (no three.js), so
+ * The city's stations: one entry per landmark. Pure data (no three.js), so
  * both the server-rendered HUD (labels, chips, panels) and the 3D scene read
  * the same list.
  *
  * Coordinates are in world units on the ground plane: x to the right, z toward
- * the default camera (south). The island's walkable radius is ~23 units and
+ * the default camera (south). The city's walkable radius is ~23 units and
  * the player spawns at the origin. `facing` is the model's rotation around the
  * vertical axis; the model's front (door, lens, mailbox slot) faces local +z,
  * so `facing: 0` faces south. Use `faceCentre(x, z)` to face the spawn point.
  *
  * To add a station: add an entry here, a panel for its id in
- * src/components/island/IslandPanels.astro, and (optionally) a model builder
- * in src/island/models.ts keyed by `model`.
+ * src/components/city/CityPanels.astro, and (optionally) a model builder
+ * in src/city/models.ts keyed by `model`.
  */
 
 export type ModelKind =
@@ -23,7 +23,7 @@ export type ModelKind =
   | "mailbox"
 
 export interface Landmark {
-  /** Also the panel id: <template id="island-panel-{id}">. */
+  /** Also the panel id: <template id="city-panel-{id}">. */
   id: string
   /** Floating label and station chip text. */
   label: string
@@ -40,7 +40,7 @@ export interface Landmark {
   labelHeight: number
 }
 
-/** Rotation that makes a model at (x, z) face the island centre. */
+/** Rotation that makes a model at (x, z) face the city centre. */
 export function faceCentre(x: number, z: number): number {
   return Math.atan2(-x, -z)
 }

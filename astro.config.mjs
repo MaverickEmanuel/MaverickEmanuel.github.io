@@ -12,7 +12,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     build: {
-      // The lazy-loaded island chunk (three.js + src/island) is ~600 kB
+      // The lazy-loaded city chunk (three.js + src/city) is ~600 kB
       // minified, ~150 kB gzipped. Classic visitors never download it.
       chunkSizeWarningLimit: 700,
     },

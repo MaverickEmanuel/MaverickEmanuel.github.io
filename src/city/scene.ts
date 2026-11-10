@@ -18,7 +18,7 @@ import {
   trees,
 } from "./world"
 
-export interface IslandScene {
+export interface CityScene {
   renderer: THREE.WebGLRenderer
   scene: THREE.Scene
   camera: THREE.PerspectiveCamera
@@ -56,7 +56,7 @@ const SKY_FRAGMENT = /* glsl */ `
   }
 `
 
-export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean }): IslandScene {
+export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean }): CityScene {
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   const renderer = new THREE.WebGLRenderer({
     canvas,

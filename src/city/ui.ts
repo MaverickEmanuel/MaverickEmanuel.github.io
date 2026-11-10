@@ -1,9 +1,9 @@
 /**
- * DOM side of the island: station chips, the "Press E / Tap to open" prompt,
+ * DOM side of the city: station chips, the "Press E / Tap to open" prompt,
  * floating labels, the control hint and the content dialog.
  *
- * All of this markup is server-rendered by IslandShell.astro (content comes
- * from src/content/site.ts via <template id="island-panel-{id}">); this module
+ * All of this markup is server-rendered by CityShell.astro (content comes
+ * from src/content/site.ts via <template id="city-panel-{id}">); this module
  * only wires it up. Listeners are bound with an AbortSignal so dispose()
  * leaves the DOM ready for the next start.
  */
@@ -30,7 +30,7 @@ export class Hud {
   constructor(private root: HTMLElement, opts: HudOptions) {
     const signal = this.abort.signal
     const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!
-    this.dialog = q<HTMLDialogElement>("[data-island-dialog]")
+    this.dialog = q<HTMLDialogElement>("[data-city-dialog]")
     this.body = q("[data-dialog-body]")
     this.prompt = q<HTMLButtonElement>("[data-prompt]")
     this.promptName = [...root.querySelectorAll<HTMLElement>("[data-prompt-name]")]
@@ -73,7 +73,7 @@ export class Hud {
 
   /** Opens the panel for a station (or "intro") in the dialog. */
   open(id: string) {
-    const template = document.getElementById(`island-panel-${id}`) as HTMLTemplateElement | null
+    const template = document.getElementById(`city-panel-${id}`) as HTMLTemplateElement | null
     if (!template) return
     if (!this.dialog.open) {
       const active = document.activeElement as HTMLElement | null
@@ -85,7 +85,7 @@ export class Hud {
     if (!this.dialog.open) this.dialog.showModal()
     // Start on the panel heading, so screen readers hear the title first and
     // the first Tab reaches the close button / first link.
-    const heading = this.body.querySelector<HTMLElement>("#island-dialog-title")
+    const heading = this.body.querySelector<HTMLElement>("#city-dialog-title")
     heading?.focus({ preventScroll: true })
   }
 

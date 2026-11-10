@@ -7,18 +7,18 @@ import Experience from "@/components/Experience.astro"
 import OffTheClock from "@/components/OffTheClock.astro"
 import Closing from "@/components/Closing.astro"
 import SiteFooter from "@/components/SiteFooter.astro"
-import IslandShell from "@/components/island/IslandShell.astro"
+import CityShell from "@/components/city/CityShell.astro"
 import { site } from "@/content/site"
 ---
 
 <Base title={site.title} description={site.description}>
-  {/* The 3D island view (the default with JS); hidden unless html.view-island. */}
-  <IslandShell />
+  {/* The 3D city view (the default with JS); hidden unless html.view-city. */}
+  <CityShell />
 
   {/* The classic page: always fully rendered (no-JS, SEO, screen readers). */}
   <div id="classic">
-    <p id="island-note" class="island-note" role="status" hidden>
-      The 3D island couldn't start in this browser, so you're seeing the classic view.
+    <p id="city-note" class="city-note" role="status" hidden>
+      The 3D city couldn't start in this browser, so you're seeing the classic view.
     </p>
     <SiteHeader />
     <main id="main" tabindex="-1">

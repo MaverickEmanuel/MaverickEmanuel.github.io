@@ -15,8 +15,8 @@ const icons: Record<string, string> = {
   One row at every width. Under 30rem the profile links collapse to icons (the
   label stays as visually hidden text, so the accessible names are still
   "GitHub" and "LinkedIn"); from 30rem up they show their text. The name links
-  to the top of the page. "Explore the island" switches to the 3D view (see
-  src/island/boot.ts); it is hidden when scripts are off (see Base.astro).
+  to the top of the page. "Explore the city" switches to the 3D view (see
+  src/city/boot.ts); it is hidden when scripts are off (see Base.astro).
 */}
 <header
   id="top"
@@ -75,7 +75,7 @@ const icons: Record<string, string> = {
   </nav>
   <button
     type="button"
-    data-view-switch="island"
+    data-view-switch="city"
     class="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-[0.875rem] leading-none font-medium whitespace-nowrap transition-colors hover:border-primary hover:bg-muted min-[30rem]:ml-1"
   >
     <svg
@@ -95,7 +95,7 @@ const icons: Record<string, string> = {
       <path d="M2 18c2 0 2-1.5 4-1.5S8 18 10 18s2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"></path>
       <path d="M12 14V5l5 3-5 3"></path>
     </svg>
-    <span>Explore<span class="max-[29.99rem]:sr-only"> the island</span></span>
+    <span>Explore<span class="max-[29.99rem]:sr-only"> the city</span></span>
   </button>
   <ThemeToggle />
 </header>

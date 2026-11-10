@@ -280,7 +280,7 @@ function mailbox(kit: Kit): THREE.Group {
   const g = new THREE.Group()
   const wood = kit.mat(colours.wood)
   const dark = kit.mat(colours.woodDark)
-  // Mailbox on a post, slot toward the island.
+  // Mailbox on a post, slot toward the city.
   g.add(box(kit, dark, [0.22, 1.3, 0.22], [0, 0.65, 0]))
   g.add(box(kit, kit.mat(colours.sienna), [0.7, 0.6, 1], [0, 1.55, 0]))
   g.add(cyl(kit, kit.mat(colours.sienna), 8, 0.35, 1, [0, 1.85, 0], [Math.PI / 2, 0, 0]))

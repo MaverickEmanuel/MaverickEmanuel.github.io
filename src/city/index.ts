@@ -1,6 +1,6 @@
 /**
- * Island entry point, loaded with a dynamic import() by boot.ts only when the
- * island view is active. Wires the scene, the player, the controls and the
+ * City entry point, loaded with a dynamic import() by boot.ts only when the
+ * city view is active. Wires the scene, the player, the controls and the
  * HUD together and runs the render loop.
  */
 import * as THREE from "three"
@@ -12,7 +12,7 @@ import { createScene } from "./scene"
 import { Hud } from "./ui"
 import { BASE_Y, groundHeight, resolvePosition } from "./world"
 
-export interface IslandSession {
+export interface CitySession {
   dispose(): void
 }
 
@@ -29,8 +29,8 @@ const GRAVITY = 28
 /** How close (beyond the footprint) the player must be to use a station. */
 const USE_RANGE = 3.4
 
-export function startIsland(root: HTMLElement, opts: StartOptions): IslandSession {
-  const canvas = root.querySelector<HTMLCanvasElement>("[data-island-canvas]")!
+export function startCity(root: HTMLElement, opts: StartOptions): CitySession {
+  const canvas = root.querySelector<HTMLCanvasElement>("[data-city-canvas]")!
   const lowPower = matchMedia("(pointer: coarse)").matches || window.innerWidth < 700
   const world = createScene(canvas, { lowPower })
   const { camera } = world
@@ -129,7 +129,7 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   const offset = new THREE.Vector3()
   function desiredCamera(out: THREE.Vector3) {
     const { azimuth, polar } = controls.orbit
-    // Portrait screens see less of the island across, so pull back a little.
+    // Portrait screens see less of the city across, so pull back a little.
     const distance = controls.orbit.distance * (camera.aspect < 1 ? Math.pow(camera.aspect, -0.4) : 1)
     offset.set(Math.sin(azimuth) * Math.sin(polar), Math.cos(polar), Math.cos(azimuth) * Math.sin(polar))
     return out.copy(camTarget).addScaledVector(offset, distance)

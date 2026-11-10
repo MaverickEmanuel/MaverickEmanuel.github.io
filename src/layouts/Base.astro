@@ -44,12 +44,13 @@ const { title, description } = Astro.props
       })()
     </script>
     <!--
-      View: the 3D island (default) or the classic page. Decided before first
+      View: the 3D city (default) or the classic page. Decided before first
       paint so neither view flashes. A saved choice (localStorage "view",
-      "island" or "classic", set by the switch buttons) wins; otherwise the
-      island, except with reduced motion, without WebGL support, or after the
-      island failed to start earlier this session. Without JS neither class is
-      set and only the classic page shows. src/island/boot.ts does the rest.
+      "city" or "classic", set by the switch buttons; the older "island" counts
+      as "city") wins; otherwise the
+      city, except with reduced motion, without WebGL support, or after the
+      city failed to start earlier this session. Without JS neither class is
+      set and only the classic page shows. src/city/boot.ts does the rest.
     -->
     <script is:inline>
       (function () {
@@ -57,11 +58,13 @@ const { title, description } = Astro.props
         var failed = false
         try {
           view = localStorage.getItem("view")
-          failed = sessionStorage.getItem("island-failed") === "1"
+          failed = sessionStorage.getItem("city-failed") === "1"
         } catch (e) {}
-        if (view !== "island" && view !== "classic")
-          view = matchMedia("(prefers-reduced-motion: reduce)").matches ? "classic" : "island"
-        if (view === "island" && (failed || !window.WebGLRenderingContext)) view = "classic"
+        // "island" was the 3D view's name before the city redesign.
+        if (view === "island") view = "city"
+        if (view !== "city" && view !== "classic")
+          view = matchMedia("(prefers-reduced-motion: reduce)").matches ? "classic" : "city"
+        if (view === "city" && (failed || !window.WebGLRenderingContext)) view = "classic"
         document.documentElement.classList.add("view-" + view)
       })()
     </script>

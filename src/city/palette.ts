@@ -61,7 +61,7 @@ export const palettes: Record<Theme, Palette> = {
   },
 }
 
-/** Fixed material colours shared by the island and the models. */
+/** Fixed material colours shared by the city and the models. */
 export const colours = {
   grass: "#8fa456",
   grassDark: "#7a9049",
