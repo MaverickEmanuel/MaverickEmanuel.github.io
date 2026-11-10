@@ -1,9 +1,12 @@
 ---
 /**
- * The city view's DOM: canvas, floating labels, HUD (view switch, intro
- * card, theme toggle, hint, prompt, station chips), loader and the content
- * dialog. Hidden unless html.view-city is set (see Base.astro and
- * global.css). The 3D scene itself is created by src/city/ (lazy-loaded).
+ * The city view's DOM: canvas, floating place markers, HUD (view switch,
+ * intro card, theme toggle, phone button, minimap, hint, objective card, car
+ * prompt, speedometer, touch joystick and pedals), the loading screen, the
+ * phone (the list of every place, for keyboard and screen-reader users too)
+ * and the content dialog. Hidden unless html.view-city is set (see
+ * Base.astro and global.css). The 3D scene itself is created by src/city/
+ * (lazy-loaded).
  */
 import ThemeToggle from "@/components/ThemeToggle.astro"
 import CityPanels from "@/components/city/CityPanels.astro"
@@ -17,8 +20,8 @@ import { landmarks } from "@/city/landmarks"
   <div class="city-labels" aria-hidden="true">
     {
       landmarks.map((lm) => (
-        <div class="city-label" data-label={lm.id}>
-          <span>{lm.label}</span>
+        <div class="city-label" data-label={lm.id} style={`--c: ${lm.colour}`}>
+          <span class="city-label-name">{lm.label}</span>
           <small>{lm.section}</small>
         </div>
       ))
@@ -43,66 +46,190 @@ import { landmarks } from "@/city/landmarks"
         >
           <path d="M4 6h16M4 12h16M4 18h10"></path>
         </svg>
-        Classic view
+        Classic<span class="city-pill-long"> view</span>
       </button>
-      <button
-        type="button"
-        class="city-title city-surface"
-        data-open-panel="intro"
-        data-needs-ready
-      >
+      <button type="button" class="city-title city-surface" data-open-panel="intro" data-needs-ready>
         <span class="city-title-name">{site.name}</span>
         <span class="city-title-line">{site.hero.headline}</span>
       </button>
-      <ThemeToggle class="city-surface city-theme" />
+      <div class="city-top-end">
+        <ThemeToggle class="city-surface city-theme" />
+        <button
+          type="button"
+          class="city-pill city-surface city-phone-btn"
+          data-phone-open
+          aria-haspopup="dialog"
+          data-needs-ready
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <rect x="6" y="2.5" width="12" height="19" rx="2.5"></rect>
+            <path d="M10.5 18h3"></path>
+          </svg>
+          <span>Phone<span class="sr-only">: all places</span></span>
+          <kbd class="hide-coarse" aria-hidden="true">P</kbd>
+        </button>
+      </div>
+    </div>
+
+    <div class="city-map" data-needs-ready>
+      <canvas class="city-minimap" data-minimap aria-hidden="true"></canvas>
+      <p class="city-gps" data-gps hidden aria-hidden="true">
+        <span class="city-gps-dot"></span>
+        <span data-gps-name></span>
+        <span class="city-gps-dist" data-gps-dist></span>
+      </p>
     </div>
 
     <div class="city-bottom" data-needs-ready>
       <!--
-        Touch-only joystick (shown under pointer: coarse, see global.css),
-        wired by Controls.attachJoystick. Hidden from assistive tech: the
-        station buttons and the keyboard cover everything it does.
+        Touch-only joystick and pedals (shown under pointer: coarse, see
+        global.css), wired by Controls. Hidden from assistive tech: the
+        keyboard and the phone cover everything they do.
       -->
       <div class="city-joystick" data-joystick aria-hidden="true">
         <span class="city-joystick-knob" data-joystick-knob></span>
       </div>
-      <p class="city-hint city-surface" data-hint>
-        <span class="hide-coarse">
-          <kbd>WASD</kbd> or arrow keys to walk · <kbd>Space</kbd> to jump · click to move · drag to look around ·
-          scroll to zoom
-        </span>
-        <span class="show-coarse">Joystick or tap to walk · drag to look around · pinch to zoom</span>
-      </p>
-      <button type="button" class="city-prompt" data-prompt hidden>
-        <span class="hide-coarse">Press <kbd aria-hidden="true">E</kbd> to open</span>
-        <span class="show-coarse">Tap to open</span>
-        <strong data-prompt-name></strong>
-      </button>
-      <nav class="city-stations" aria-label="City stations">
-        <ul>
-          {
-            landmarks.map((lm) => (
-              <li>
-                <button type="button" class="city-chip city-surface" data-station={lm.id}>
-                  <span class="city-chip-name">{lm.label}</span>
-                  <span class="city-chip-section">{lm.section}</span>
-                </button>
-              </li>
-            ))
-          }
-        </ul>
-      </nav>
+
+      <div class="city-center">
+        <p class="city-hint city-surface" data-hint>
+          <span class="hide-coarse">
+            <kbd>WASD</kbd> move · <kbd>Shift</kbd> sprint · <kbd>Space</kbd> jump · <kbd>F</kbd> car · <kbd
+              >E</kbd
+            > enter · <kbd>P</kbd> phone · drag to look
+          </span>
+          <span class="show-coarse">Joystick to move (push to the edge to sprint) · tap to walk · drag to look</span>
+        </p>
+        <button type="button" class="city-objective" data-prompt hidden>
+          <span class="city-objective-section" data-prompt-section></span>
+          <strong class="city-objective-name" data-prompt-name></strong>
+          <span class="city-objective-action">
+            <span class="hide-coarse">Press <kbd>E</kbd> to enter</span>
+            <span class="show-coarse">Tap to enter</span>
+          </span>
+        </button>
+        <button type="button" class="city-car-btn city-surface" data-car-prompt hidden>
+          <kbd class="hide-coarse" aria-hidden="true">F</kbd>
+          <span data-car-prompt-text>Get in the car</span>
+        </button>
+      </div>
+
+      <div class="city-drive" aria-hidden="true">
+        <div class="city-speedo" data-speedo>
+          <span data-speed>0</span>
+          <small>km/h</small>
+        </div>
+        <div class="city-pedals">
+          <div class="city-pedal city-pedal-brake" data-pedal="brake">Brake</div>
+          <div class="city-pedal city-pedal-gas" data-pedal="gas">Gas</div>
+        </div>
+      </div>
     </div>
     <p class="sr-only" aria-live="polite" data-status></p>
   </div>
 
   <div class="city-loader" role="status">
-    <span class="city-loader-bar" aria-hidden="true"></span>
-    <span>Loading the city…</span>
+    <svg class="city-loader-art" viewBox="0 0 800 260" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <circle cx="560" cy="150" r="70" class="city-loader-sun"></circle>
+      <path
+        class="city-loader-far"
+        d="M0 260V170h40v-30h30v50h26v-80h44v60h20v-40h36v70h30v-110h50v90h22v-50h40v70h34v-36h28v56h40v-96h46v76h30v-50h36v70h24v-40h44v50h30v-70h38v84h40v-30h32v116z"
+      ></path>
+      <path
+        class="city-loader-near"
+        d="M0 260v-46h60v-24h40v34h70v-58h56v58h48v-20h60v36h74v-50h52v50h60v-28h56v40h66v-66h50v66h48v-30h60v58z"
+      ></path>
+      <g class="city-loader-palm">
+        <path d="M118 260c4-40 6-70 2-104" fill="none" stroke-width="6" stroke-linecap="round"></path>
+        <path d="M120 156c-22-12-44-10-60 2 20-4 38 0 60-2zM120 156c18-16 42-20 62-10-20 0-40 4-62 10zM120 156c-8-20-28-30-48-28 18 6 32 14 48 28zM120 156c10-20 30-28 50-24-18 6-34 12-50 24z"
+        ></path>
+      </g>
+      <g class="city-loader-palm">
+        <path d="M680 260c-3-30-1-58 6-82" fill="none" stroke-width="5" stroke-linecap="round"></path>
+        <path d="M686 178c-20-10-38-8-52 2 16-4 32 0 52-2zM686 178c16-14 36-16 52-8-16 0-34 4-52 8zM686 178c-6-16-22-24-40-22 14 6 26 12 40 22z"
+        ></path>
+      </g>
+    </svg>
+    <div class="city-loader-card">
+      <p class="city-loader-kicker">Interactive portfolio</p>
+      <p class="city-loader-name">{site.name}</p>
+      <span class="city-loader-bar" aria-hidden="true"><span></span></span>
+      <p class="city-loader-text">Loading the city…</p>
+      <p class="city-loader-tip" data-loader-tip aria-hidden="true"></p>
+    </div>
   </div>
+
+  <dialog class="city-phone" data-phone aria-labelledby="city-phone-title">
+    <div class="city-phone-status" aria-hidden="true">
+      <span data-phone-clock></span>
+      <span class="city-phone-signal"><i></i><i></i><i></i><i></i></span>
+    </div>
+    <h2 id="city-phone-title" class="city-phone-title">Places</h2>
+    <p class="city-phone-sub">Go straight to a section, or set a waypoint and get there yourself.</p>
+    <ul class="city-apps">
+      <li class="city-app" style="--c: #f4efe6">
+        <button type="button" class="city-app-main" data-open-panel="intro">
+          <span class="city-app-icon" aria-hidden="true">i</span>
+          <span class="city-app-text">
+            <span class="city-app-name">About me</span>
+            <span class="city-app-section">Introduction</span>
+          </span>
+        </button>
+      </li>
+      {
+        landmarks.map((lm) => (
+          <li class="city-app" style={`--c: ${lm.colour}`}>
+            <button type="button" class="city-app-main" data-station={lm.id}>
+              <span class="city-app-icon" aria-hidden="true">
+                {lm.glyph}
+              </span>
+              <span class="city-app-text">
+                <span class="city-app-name">{lm.label}</span>
+                <span class="city-app-section">{lm.section}</span>
+              </span>
+            </button>
+            <button type="button" class="city-app-gps" data-waypoint={lm.id} aria-label={`Set a waypoint to ${lm.label}`}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"></path>
+                <circle cx="12" cy="10" r="2.3"></circle>
+              </svg>
+            </button>
+          </li>
+        ))
+      }
+    </ul>
+    <div class="city-phone-foot">
+      <button type="button" class="city-phone-link" data-view-switch="classic">Classic view</button>
+      <button type="button" class="city-phone-close" data-phone-close>Close</button>
+    </div>
+  </dialog>
 
   <dialog class="city-dialog" data-city-dialog aria-labelledby="city-dialog-title">
     <div class="city-dialog-bar">
+      <span class="city-dialog-tag" data-dialog-tag aria-hidden="true"></span>
       <button type="button" class="city-dialog-close" data-close aria-label="Close">
         <svg
           xmlns="http://www.w3.org/2000/svg"

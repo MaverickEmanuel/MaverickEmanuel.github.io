@@ -7,10 +7,10 @@ import * as THREE from "three"
 import type { Kit } from "./models"
 
 const SKIN = "#e2b48c"
-const SHIRT = "#d9783f"
-const PANTS = "#3b3530"
-const CAP = "#2f6268"
-const SHOES = "#2a2522"
+const SHIRT = "#2f6b70"
+const PANTS = "#2e2a36"
+const CAP = "#e2552b"
+const SHOES = "#f1ece2"
 
 export class Character {
   readonly group = new THREE.Group()
@@ -72,12 +72,14 @@ export class Character {
   update(dt: number, speed: number, time: number, airborne = false) {
     const moving = Math.min(1, speed / 5)
     this.swing += (moving - this.swing) * Math.min(1, dt * 10)
-    this.phase += dt * (4 + speed * 1.6)
-    const s = Math.sin(this.phase) * 0.7 * this.swing
+    this.phase += dt * (4 + speed * 1.3)
+    const s = Math.sin(this.phase) * Math.min(0.95, 0.55 + speed * 0.035) * this.swing
     this.legs[0].rotation.x = s
     this.legs[1].rotation.x = -s
     this.arms[0].rotation.x = -s * 0.9
     this.arms[1].rotation.x = s * 0.9
+    // Lean into a sprint.
+    this.body.rotation.x += (Math.min(1, Math.max(0, speed - 7) / 4) * 0.22 - this.body.rotation.x) * Math.min(1, dt * 8)
     const idle = (1 - this.swing) * Math.sin(time * 2) * 0.02
     this.body.position.y = Math.abs(Math.sin(this.phase)) * 0.09 * this.swing + idle
     this.head.rotation.z = Math.sin(this.phase * 0.5) * 0.04 * this.swing

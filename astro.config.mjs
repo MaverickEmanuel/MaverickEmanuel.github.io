@@ -12,8 +12,8 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     build: {
-      // The lazy-loaded city chunk (three.js + src/city) is ~600 kB
-      // minified, ~150 kB gzipped. Classic visitors never download it.
+      // The lazy-loaded city chunk (three.js + src/city) is ~640 kB
+      // minified, ~165 kB gzipped. Classic visitors never download it.
       chunkSizeWarningLimit: 700,
     },
   },

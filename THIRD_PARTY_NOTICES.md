@@ -31,11 +31,14 @@ Gradients: https://github.com/CristianOlivera1/Aura
 ## Fonts (SIL Open Font License 1.1)
 
 The fonts are self-hosted from the Fontsource packages
-`@fontsource-variable/instrument-sans` and `@fontsource-variable/inter`, both
+`@fontsource-variable/instrument-sans`, `@fontsource-variable/inter` and
+`@fontsource-variable/oswald`, all
 licensed under the SIL Open Font License, Version 1.1
 (https://openfontlicense.org). The full licence text ships in each package's
 `LICENSE` file under `node_modules/@fontsource-variable/`.
 
+- Oswald: Copyright 2016 The Oswald Project Authors
+  (https://github.com/googlefonts/OswaldFont)
 - Instrument Sans: Copyright 2022 The Instrument Sans Project Authors
   (https://github.com/Instrument/instrument-sans)
 - Inter: Copyright 2016 The Inter Project Authors

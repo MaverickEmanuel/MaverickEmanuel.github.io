@@ -39,8 +39,37 @@ function store(key: string, value: string | null, storage: "local" | "session" =
   }
 }
 
+const TIPS = {
+  fine: [
+    "Hold Shift to sprint.",
+    "Press F next to the car to drive it. Space is the handbrake.",
+    "Press P for the phone: every section is one tap away.",
+    "Click a blip on the minimap to set a waypoint.",
+  ],
+  coarse: [
+    "Push the joystick to the edge to sprint.",
+    "Walk up to the car and tap Get in to drive it.",
+    "Open the phone for every section in one list.",
+    "Tap a blip on the minimap to set a waypoint.",
+  ],
+}
+let tipTimer = 0
+
+/** Rotates the loading-screen tips until the city is ready. */
+function startTips() {
+  const el = city?.querySelector<HTMLElement>("[data-loader-tip]")
+  if (!el) return
+  const tips = matchMedia("(pointer: coarse)").matches ? TIPS.coarse : TIPS.fine
+  let i = Math.floor(Math.random() * tips.length)
+  const show = () => (el.textContent = `Tip: ${tips[i++ % tips.length]}`)
+  show()
+  window.clearInterval(tipTimer)
+  tipTimer = window.setInterval(show, 2600)
+}
+
 async function enterCity(focusSwitch: boolean) {
   if (!city) return
+  startTips()
   const gen = ++generation
   if (note) note.hidden = true
   city.classList.remove("is-ready")
@@ -52,6 +81,7 @@ async function enterCity(focusSwitch: boolean) {
     if (gen !== generation) return
     session = startCity(city, { reducedMotion: reducedMotion.matches, onFatal: fail })
     city.classList.add("is-ready")
+    window.clearInterval(tipTimer)
   } catch (error) {
     if (gen === generation) fail(error)
   }
@@ -59,6 +89,7 @@ async function enterCity(focusSwitch: boolean) {
 
 function enterClassic(focusSwitch: boolean) {
   generation++
+  window.clearInterval(tipTimer)
   session?.dispose()
   session = null
   city?.classList.remove("is-ready")

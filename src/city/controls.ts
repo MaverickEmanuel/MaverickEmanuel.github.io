@@ -1,7 +1,9 @@
 /**
- * Input: WASD / arrow keys, Space to jump, E to use a station, click or tap
- * to walk, the on-screen joystick (touch devices only, see CityShell.astro),
- * drag to orbit the follow camera, wheel or pinch to zoom.
+ * Input: WASD / arrow keys, Shift to sprint, Space to jump (handbrake while
+ * driving), E to use a place, F to get in or out of the car, P for the
+ * phone, click or tap to walk, the on-screen joystick and pedals (touch
+ * devices only, see CityShell.astro), drag to orbit the follow camera, wheel
+ * or pinch to zoom.
  *
  * Keys are read from window but ignored while a dialog is open, while focus
  * is in a text field, or with Ctrl/Cmd/Alt held, so Tab, typing and browser
@@ -18,10 +20,10 @@ export interface Orbit {
 }
 
 export const ORBIT_LIMITS = {
-  polarMin: 0.45,
-  polarMax: 1.4,
-  distanceMin: 10,
-  distanceMax: 50,
+  polarMin: 0.5,
+  polarMax: 1.42,
+  distanceMin: 6,
+  distanceMax: 45,
 }
 
 interface ControlsOptions {
@@ -32,6 +34,12 @@ interface ControlsOptions {
   onTap: (clientX: number, clientY: number) => void
   onInteract: () => void
   onJump: () => void
+  /** F: get in or out of the car. */
+  onVehicle: () => void
+  /** P: open the phone. */
+  onPhone: () => void
+  /** True while the player is driving (Space becomes the handbrake). */
+  isDriving: () => boolean
   /** First real input of the session (used to fade the hint). */
   onFirstInput: () => void
 }
@@ -63,9 +71,19 @@ function isPressTarget(target: EventTarget | null): boolean {
 /** Joystick input below this (fraction of full tilt) counts as none. */
 const STICK_DEAD_ZONE = 0.15
 
+export interface DriveKeys {
+  throttle: number
+  steer: number
+  handbrake: boolean
+}
+
 export class Controls {
-  readonly orbit: Orbit = { azimuth: 0, polar: 0.95, distance: 36 }
+  readonly orbit: Orbit = { azimuth: 0, polar: 1.24, distance: 12.5 }
+  /** performance.now() of the last drag, pinch or wheel (the camera holds still for a moment after). */
+  lastLook = -Infinity
   private pressed = new Set<string>()
+  private held = new Set<string>()
+  private pedals = { gas: false, brake: false }
   private pointers = new Map<number, { x: number; y: number }>()
   private dragStart: { x: number; y: number } | null = null
   private dragged = false
@@ -79,8 +97,14 @@ export class Controls {
   constructor(private opts: ControlsOptions) {
     const { canvas } = opts
     this.listen(window, "keydown", (e) => this.onKeyDown(e as KeyboardEvent))
-    this.listen(window, "keyup", (e) => this.pressed.delete((e as KeyboardEvent).code))
-    this.listen(window, "blur", () => this.pressed.clear())
+    this.listen(window, "keyup", (e) => {
+      this.pressed.delete((e as KeyboardEvent).code)
+      this.held.delete((e as KeyboardEvent).code)
+    })
+    this.listen(window, "blur", () => {
+      this.pressed.clear()
+      this.held.clear()
+    })
     this.listen(canvas, "pointerdown", (e) => this.onPointerDown(e as PointerEvent))
     this.listen(canvas, "pointermove", (e) => this.onPointerMove(e as PointerEvent))
     this.listen(canvas, "pointerup", (e) => this.onPointerUp(e as PointerEvent))
@@ -109,19 +133,28 @@ export class Controls {
     if (e.metaKey || e.ctrlKey || e.altKey) return
     if (this.opts.isBlocked() || isTypingTarget(e.target)) {
       this.pressed.clear()
+      this.held.clear()
       return
     }
     if (e.code in KEY_DIRS) {
       this.pressed.add(e.code)
       this.firstInput()
       e.preventDefault()
+    } else if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
+      this.held.add(e.code)
     } else if (e.code === "KeyE" && !e.repeat) {
       this.opts.onInteract()
+    } else if (e.code === "KeyF" && !e.repeat) {
+      this.firstInput()
+      this.opts.onVehicle()
+    } else if (e.code === "KeyP" && !e.repeat) {
+      this.opts.onPhone()
     } else if (e.code === "Space" && !isPressTarget(e.target)) {
       e.preventDefault()
       if (!e.repeat) {
         this.firstInput()
-        this.opts.onJump()
+        if (this.opts.isDriving()) this.held.add("Space")
+        else this.opts.onJump()
       }
     }
   }
@@ -182,6 +215,56 @@ export class Controls {
       knob.style.transform = ""
       base.classList.remove("is-active")
     })
+  }
+
+  /**
+   * Touch pedals: hold to accelerate or brake/reverse. They are plain
+   * buttons, so a keyboard press also works (one tap of throttle).
+   */
+  attachPedals(gas: HTMLElement, brake: HTMLElement) {
+    for (const [el, key] of [
+      [gas, "gas"],
+      [brake, "brake"],
+    ] as const) {
+      const set = (on: boolean) => {
+        this.pedals[key] = on
+        el.classList.toggle("is-active", on)
+      }
+      this.listen(el, "pointerdown", (event) => {
+        const e = event as PointerEvent
+        e.preventDefault()
+        el.setPointerCapture(e.pointerId)
+        this.firstInput()
+        set(true)
+      })
+      for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) this.listen(el, type, () => set(false))
+      this.listen(el, "contextmenu", (e) => e.preventDefault())
+      this.cleanups.push(() => set(false))
+    }
+  }
+
+  /** True while Shift is held, or the joystick is pushed to the rim. */
+  sprinting(): boolean {
+    if (this.held.has("ShiftLeft") || this.held.has("ShiftRight")) return true
+    return Math.hypot(this.stick[0], this.stick[1]) > 0.93
+  }
+
+  /** Car input from the keys, the joystick (x steers, y throttles) and the pedals. */
+  driveKeys(): DriveKeys {
+    if (this.opts.isBlocked()) {
+      this.pressed.clear()
+      this.held.clear()
+      return { throttle: 0, steer: 0, handbrake: false }
+    }
+    const [kx, ky] = this.keyVector()
+    let throttle = ky
+    let steer = kx
+    if (!kx && !ky) {
+      steer = this.stick[0]
+      throttle = Math.abs(this.stick[1]) > 0.2 ? this.stick[1] : 0
+    }
+    if (this.pedals.gas !== this.pedals.brake) throttle = this.pedals.gas ? 1 : -1
+    return { throttle, steer, handbrake: this.held.has("Space") }
   }
 
   /**
@@ -250,6 +333,7 @@ export class Controls {
       this.firstInput()
     }
     if (this.dragged) {
+      this.lastLook = performance.now()
       this.orbit.azimuth -= dx * 0.006
       this.orbit.polar = clamp(this.orbit.polar - dy * 0.005, ORBIT_LIMITS.polarMin, ORBIT_LIMITS.polarMax)
     }
@@ -276,6 +360,7 @@ export class Controls {
   }
 
   private zoomBy(factor: number) {
+    this.lastLook = performance.now()
     this.orbit.distance = clamp(this.orbit.distance * factor, ORBIT_LIMITS.distanceMin, ORBIT_LIMITS.distanceMax)
   }
 
@@ -283,6 +368,7 @@ export class Controls {
     this.cleanups.forEach((fn) => fn())
     this.cleanups = []
     this.pressed.clear()
+    this.held.clear()
     this.pointers.clear()
   }
 }
