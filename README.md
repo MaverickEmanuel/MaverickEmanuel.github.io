@@ -1,8 +1,8 @@
 # portfolio-v3
 
 Single-page personal portfolio built with Astro, Tailwind CSS v4 and shadcn/ui
-tokens. Static output, no client-side JavaScript beyond two tiny inline theme
-scripts.
+tokens. Static output, no JavaScript files: only a few tiny inline scripts (theme,
+entrance motion).
 
 Third-party credits and licences: see `THIRD_PARTY_NOTICES.md`.
 
@@ -21,9 +21,25 @@ pnpm preview   # serve the built site locally
 pnpm check     # type-check with astro check
 ```
 
-`pnpm build` runs `scripts/prune-dist.mjs` afterwards (the `postbuild`
-script). It deletes JavaScript files in `dist/_astro` that no built HTML or CSS
+`pnpm build` runs `astro build && node scripts/prune-dist.mjs` (chained in the
+`build` script, so it also runs in CI). The prune script deletes JavaScript files in `dist/_astro` that no built HTML or CSS
 references (the unused React runtime) and prints what it removed.
+
+## Deploy (GitHub Pages)
+
+The site is served at the root of <https://maverickemanuel.github.io>
+(`site` is set in `astro.config.mjs`, no `base`).
+
+- `.github/workflows/deploy.yml` builds with `withastro/action` and publishes
+  with `actions/deploy-pages`. **Pushing to `main` deploys**; the workflow can
+  also be run by hand (`workflow_dispatch`).
+- One-time setup in the GitHub repo: Settings > Pages > Build and deployment >
+  Source: **GitHub Actions**.
+- On a free GitHub plan, Pages only works for a **public** repository.
+- A user site must live in a repo named exactly `MaverickEmanuel.github.io`.
+  The plan is to rename the repo (currently `portfolio`) to that, then update
+  the local remote (`git remote set-url origin ...`). GitHub redirects the old
+  name, but the Pages URL only becomes the root address after the rename.
 
 ## Theme
 

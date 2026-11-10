@@ -5,11 +5,10 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/prune-dist.mjs",
     "preview": "astro preview",
     "check": "astro check",
-    "astro": "astro",
-    "postbuild": "node scripts/prune-dist.mjs"
+    "astro": "astro"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.12",

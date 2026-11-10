@@ -5,6 +5,8 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://astro.build/config
 export default defineConfig({
+  // Served at the root of https://maverickemanuel.github.io (no `base`).
+  site: "https://maverickemanuel.github.io",
   output: "static",
   integrations: [react()],
   vite: {
