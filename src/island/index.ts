@@ -23,6 +23,9 @@ interface StartOptions {
 }
 
 const WALK_SPEED = 6.5
+/** Jump take-off speed and gravity (units/s, units/s²): about 1.3 units high, 0.6s in the air. */
+const JUMP_SPEED = 8.5
+const GRAVITY = 28
 /** How close (beyond the footprint) the player must be to use a station. */
 const USE_RANGE = 3.4
 
@@ -42,6 +45,9 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   let targetLandmark: Landmark | null = null
   let stuckFor = 0
   let speed = 0
+  /** Height above the ground and vertical speed of a jump (0 when grounded). */
+  let air = 0
+  let airSpeed = 0
 
   // Tap marker: a flat ring where a click/tap sent the player.
   const marker = new THREE.Mesh(
@@ -67,6 +73,9 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     canvas,
     isBlocked: () => hud.dialogOpen,
     onInteract: () => hud.openNearby(),
+    onJump: () => {
+      if (air === 0 && airSpeed === 0) airSpeed = JUMP_SPEED
+    },
     onFirstInput: () => hud.fadeHint(),
     onTap: (x, y) => {
       const rect = canvas.getBoundingClientRect()
@@ -89,6 +98,10 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
       if (point) walkTo(point.x, point.z, null)
     },
   })
+
+  const joystick = root.querySelector<HTMLElement>("[data-joystick]")
+  const knob = joystick?.querySelector<HTMLElement>("[data-joystick-knob]")
+  if (joystick && knob) controls.attachJoystick(joystick, knob)
 
   function walkTo(x: number, z: number, landmark: Landmark | null) {
     const p = resolvePosition({ x, z })
@@ -137,12 +150,13 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     const az = controls.orbit.azimuth
     forward.set(-Math.sin(az), -Math.cos(az))
     right.set(Math.cos(az), -Math.sin(az))
-    const [kx, ky] = controls.keyVector()
+    // Keys (normalised) or the joystick (analog, length up to 1).
+    const [mx, my] = controls.moveVector()
     move.set(0, 0)
-    if (kx || ky) {
+    if (mx || my) {
       target = null
       marker.visible = false
-      move.addScaledVector(forward, ky).addScaledVector(right, kx).normalize()
+      move.addScaledVector(forward, my).addScaledVector(right, mx)
     } else if (target) {
       move.set(target.x - pos.x, target.y - pos.z)
       const dist = move.length()
@@ -178,9 +192,20 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     } else stuckFor = 0
 
     pos.y += (groundHeight(pos.x, pos.z) - pos.y) * Math.min(1, dt * 20)
+    // Jump: a simple ballistic arc on top of the ground height. The camera
+    // follows pos (the ground), so it does not bob with the jump.
+    if (airSpeed !== 0 || air > 0) {
+      airSpeed -= GRAVITY * dt
+      air += airSpeed * dt
+      if (air <= 0) {
+        air = 0
+        airSpeed = 0
+      }
+    }
     player.group.position.copy(pos)
+    player.group.position.y += air
     player.group.rotation.y = heading
-    player.update(dt, speed, time)
+    player.update(dt, air > 0 ? 0 : speed, time, air > 0)
 
     if (marker.visible) {
       const m = marker.material as THREE.MeshBasicMaterial

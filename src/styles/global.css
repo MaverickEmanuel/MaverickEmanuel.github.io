@@ -997,6 +997,56 @@ html.view-island,
   display: none;
 }
 
+/*
+ * On-screen joystick (touch devices only): a translucent pad at the bottom
+ * left, above the hint and station chips. Dim at rest, solid while held.
+ */
+.island-joystick {
+  display: none;
+  position: relative;
+  align-self: flex-start;
+  place-items: center;
+  width: 7rem;
+  height: 7rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--background) 30%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--foreground) 28%, transparent);
+  box-shadow: inset 0 0 0 1.25rem color-mix(in srgb, var(--foreground) 5%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0.5;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 200ms ease;
+}
+.island-joystick.is-active {
+  opacity: 0.9;
+}
+.island-joystick-knob {
+  width: 2.875rem;
+  height: 2.875rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--foreground) 55%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--background) 40%, transparent);
+  box-shadow: 0 6px 16px -6px rgb(20 12 4 / 0.5);
+  pointer-events: none;
+}
+.island-joystick:not(.is-active) .island-joystick-knob {
+  transition: transform 160ms var(--ease-out);
+}
+@media (pointer: coarse) {
+  .island-joystick {
+    display: grid;
+  }
+}
+#island:has(.island-dialog[open]) .island-joystick {
+  visibility: hidden;
+}
+
 /* Touch devices get tap wording; mouse/keyboard devices get key wording. */
 @media (pointer: coarse) {
   .hide-coarse {

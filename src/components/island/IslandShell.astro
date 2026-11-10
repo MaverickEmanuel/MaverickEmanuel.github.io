@@ -58,11 +58,20 @@ import { landmarks } from "@/island/landmarks"
     </div>
 
     <div class="island-bottom" data-needs-ready>
+      <!--
+        Touch-only joystick (shown under pointer: coarse, see global.css),
+        wired by Controls.attachJoystick. Hidden from assistive tech: the
+        station buttons and the keyboard cover everything it does.
+      -->
+      <div class="island-joystick" data-joystick aria-hidden="true">
+        <span class="island-joystick-knob" data-joystick-knob></span>
+      </div>
       <p class="island-hint island-surface" data-hint>
         <span class="hide-coarse">
-          <kbd>WASD</kbd> or arrow keys to walk · click to move · drag to look around · scroll to zoom
+          <kbd>WASD</kbd> or arrow keys to walk · <kbd>Space</kbd> to jump · click to move · drag to look around ·
+          scroll to zoom
         </span>
-        <span class="show-coarse">Tap to walk · drag to look around · pinch to zoom</span>
+        <span class="show-coarse">Joystick or tap to walk · drag to look around · pinch to zoom</span>
       </p>
       <button type="button" class="island-prompt" data-prompt hidden>
         <span class="hide-coarse">Press <kbd aria-hidden="true">E</kbd> to open</span>

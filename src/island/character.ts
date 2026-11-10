@@ -20,6 +20,8 @@ export class Character {
   private head: THREE.Group
   private phase = 0
   private swing = 0
+  /** 0 on the ground, 1 fully in the jump pose. */
+  private airBlend = 0
 
   constructor(kit: Kit) {
     const unit = kit.geo("box", () => new THREE.BoxGeometry(1, 1, 1))
@@ -64,9 +66,10 @@ export class Character {
 
   /**
    * Advances the walk cycle. `speed` is the current ground speed in units per
-   * second (0 when idle); `time` is the running clock in seconds.
+   * second (0 when idle); `time` is the running clock in seconds; `airborne`
+   * blends in the jump pose (arms out, one knee up).
    */
-  update(dt: number, speed: number, time: number) {
+  update(dt: number, speed: number, time: number, airborne = false) {
     const moving = Math.min(1, speed / 5)
     this.swing += (moving - this.swing) * Math.min(1, dt * 10)
     this.phase += dt * (4 + speed * 1.6)
@@ -78,5 +81,17 @@ export class Character {
     const idle = (1 - this.swing) * Math.sin(time * 2) * 0.02
     this.body.position.y = Math.abs(Math.sin(this.phase)) * 0.09 * this.swing + idle
     this.head.rotation.z = Math.sin(this.phase * 0.5) * 0.04 * this.swing
+
+    this.airBlend += ((airborne ? 1 : 0) - this.airBlend) * Math.min(1, dt * 14)
+    const a = this.airBlend
+    if (a > 0.001) {
+      this.legs[0].rotation.x += (-0.6 - this.legs[0].rotation.x) * a
+      this.legs[1].rotation.x += (0.3 - this.legs[1].rotation.x) * a
+      this.arms[0].rotation.x *= 1 - a
+      this.arms[1].rotation.x *= 1 - a
+    }
+    // Arms swing out sideways (left arm is index 0, on -x).
+    this.arms[0].rotation.z = -0.9 * a
+    this.arms[1].rotation.z = 0.9 * a
   }
 }

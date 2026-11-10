@@ -1,10 +1,12 @@
 /**
- * Input: WASD / arrow keys, E to use a station, click or tap to walk,
+ * Input: WASD / arrow keys, Space to jump, E to use a station, click or tap
+ * to walk, the on-screen joystick (touch devices only, see IslandShell.astro),
  * drag to orbit the follow camera, wheel or pinch to zoom.
  *
  * Keys are read from window but ignored while a dialog is open, while focus
  * is in a text field, or with Ctrl/Cmd/Alt held, so Tab, typing and browser
- * shortcuts are never hijacked.
+ * shortcuts are never hijacked. Space is also left alone while focus is on a
+ * button or link, so it still presses them.
  */
 
 export interface Orbit {
@@ -29,6 +31,7 @@ interface ControlsOptions {
   /** A click or tap that was not a drag, in client coordinates. */
   onTap: (clientX: number, clientY: number) => void
   onInteract: () => void
+  onJump: () => void
   /** First real input of the session (used to fade the hint). */
   onFirstInput: () => void
 }
@@ -50,6 +53,16 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
 }
 
+/** Elements that Space activates on their own. */
+function isPressTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null
+  if (!el || !el.closest) return false
+  return !!el.closest("button, a[href], summary, [role='button'], [role='link'], [role='checkbox']")
+}
+
+/** Joystick input below this (fraction of full tilt) counts as none. */
+const STICK_DEAD_ZONE = 0.15
+
 export class Controls {
   readonly orbit: Orbit = { azimuth: 0, polar: 0.95, distance: 36 }
   private pressed = new Set<string>()
@@ -58,6 +71,9 @@ export class Controls {
   private dragged = false
   private pinchDistance = 0
   private started = false
+  /** Joystick tilt as [right, forward], length 0..1. */
+  private stick: [number, number] = [0, 0]
+  private stickPointer: number | null = null
   private cleanups: Array<() => void> = []
 
   constructor(private opts: ControlsOptions) {
@@ -101,7 +117,85 @@ export class Controls {
       e.preventDefault()
     } else if (e.code === "KeyE" && !e.repeat) {
       this.opts.onInteract()
+    } else if (e.code === "Space" && !isPressTarget(e.target)) {
+      e.preventDefault()
+      if (!e.repeat) {
+        this.firstInput()
+        this.opts.onJump()
+      }
     }
+  }
+
+  /**
+   * Drives the on-screen joystick: `base` is the round pad, `knob` the thumb
+   * that follows the finger (clamped to the pad). Movement is analog.
+   */
+  attachJoystick(base: HTMLElement, knob: HTMLElement) {
+    const update = (e: PointerEvent) => {
+      const rect = base.getBoundingClientRect()
+      const radius = (rect.width - knob.offsetWidth) / 2 || rect.width / 2
+      let dx = e.clientX - (rect.left + rect.width / 2)
+      let dy = e.clientY - (rect.top + rect.height / 2)
+      const len = Math.hypot(dx, dy)
+      if (len > radius) {
+        dx *= radius / len
+        dy *= radius / len
+      }
+      knob.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`
+      const tilt = Math.min(1, len / radius)
+      if (tilt < STICK_DEAD_ZONE) {
+        this.stick = [0, 0]
+      } else {
+        // Same direction, rescaled so the dead-zone edge is 0 and full tilt is 1.
+        const k = (tilt - STICK_DEAD_ZONE) / (1 - STICK_DEAD_ZONE) / tilt
+        this.stick = [(dx / radius) * k, (-dy / radius) * k]
+      }
+    }
+    const release = (e: PointerEvent) => {
+      if (e.pointerId !== this.stickPointer) return
+      this.stickPointer = null
+      this.stick = [0, 0]
+      knob.style.transform = ""
+      base.classList.remove("is-active")
+    }
+    this.listen(base, "pointerdown", (event) => {
+      const e = event as PointerEvent
+      if (this.stickPointer !== null || this.opts.isBlocked()) return
+      e.preventDefault()
+      base.setPointerCapture(e.pointerId)
+      this.stickPointer = e.pointerId
+      base.classList.add("is-active")
+      this.firstInput()
+      update(e)
+    })
+    this.listen(base, "pointermove", (event) => {
+      const e = event as PointerEvent
+      if (e.pointerId === this.stickPointer) update(e)
+    })
+    this.listen(base, "pointerup", (e) => release(e as PointerEvent))
+    this.listen(base, "pointercancel", (e) => release(e as PointerEvent))
+    this.listen(base, "lostpointercapture", (e) => release(e as PointerEvent))
+    this.listen(base, "contextmenu", (e) => e.preventDefault())
+    this.cleanups.push(() => {
+      this.stick = [0, 0]
+      this.stickPointer = null
+      knob.style.transform = ""
+      base.classList.remove("is-active")
+    })
+  }
+
+  /**
+   * Movement as [right, forward]: the keys (normalised, they win when held)
+   * or else the joystick (analog, length 0..1).
+   */
+  moveVector(): [number, number] {
+    const [kx, ky] = this.keyVector()
+    if (kx || ky) {
+      const len = Math.hypot(kx, ky)
+      return [kx / len, ky / len]
+    }
+    if (this.opts.isBlocked()) return [0, 0]
+    return this.stick
   }
 
   /** Keyboard movement as [right, forward], each -1..1 (not normalised). */
