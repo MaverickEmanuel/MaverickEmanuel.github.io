@@ -47,6 +47,32 @@ The site is dark by default for every visitor. A saved choice (`localStorage`
 key `theme`, `light` or `dark`, set by the toggle) wins when present. The
 system colour-scheme preference is not used.
 
+## Intro
+
+On a visitor's first visit, a short overlay (under 5s) shows a mock agent
+session that "builds" the site: the prompt types itself, the tool-call lines
+tick from spinner to check, the agent replies, and the overlay fades out as
+the hero entrance plays. The page is fully rendered underneath the whole time.
+
+- **How it works:** a render-blocking script in `src/layouts/Base.astro` adds
+  `html.intro` before first paint when `localStorage` has no `intro-seen` key,
+  and sets the key straight away, so a reload mid-intro does not replay it.
+  There is no intro with reduced motion, without JS, or when `localStorage`
+  (or `inert`) is unavailable. `src/components/AgentIntro.astro` holds the
+  markup and the timeline script; the styles are under "Agent intro" in
+  `src/styles/global.css`. While it runs the page is `inert` and the Skip
+  button has focus. Skip, Esc, any key, click, wheel, touch or scroll ends it
+  at once, and a failsafe ends it after 7s.
+- **Replay:** the "Replay intro" button in the footer (hidden with reduced
+  motion). To see the first-visit version again, run
+  `localStorage.removeItem("intro-seen")` in the console and reload.
+- **Edit the script:** `intro` in `src/content/site.ts` (prompt, `steps` as
+  `{ tool, arg }`, reply). The steps are spread evenly over the same time, so
+  six to eight short lines fit. The timings are constants at the top of the
+  script in `AgentIntro.astro`.
+- **Disable it:** set `intro.enabled` to `false` in `site.ts`. That drops the
+  head script, the overlay and the replay button from the build.
+
 ## Updating content
 
 All copy lives in `src/content/site.ts`. Components only render from it.

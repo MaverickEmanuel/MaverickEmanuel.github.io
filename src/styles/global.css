@@ -205,6 +205,51 @@
       rgb(183 77 0 / 0.42) 0%,
       rgb(183 77 0 / 0) 76%
     );
+
+  /* Intro overlay backdrop: the same family, spread over the viewport. */
+  --wash-intro:
+    radial-gradient(
+      ellipse 70% 60% at 28% 30%,
+      rgb(255 183 77 / 0.300) 0%,
+      rgb(255 183 77 / 0.297) 8%,
+      rgb(255 183 77 / 0.283) 16%,
+      rgb(255 183 77 / 0.251) 23%,
+      rgb(255 183 77 / 0.205) 31%,
+      rgb(255 183 77 / 0.150) 39%,
+      rgb(255 183 77 / 0.095) 47%,
+      rgb(255 183 77 / 0.049) 55%,
+      rgb(255 183 77 / 0.017) 62%,
+      rgb(255 183 77 / 0.003) 70%,
+      rgb(255 183 77 / 0.000) 78%
+    ),
+    radial-gradient(
+      ellipse 60% 60% at 76% 38%,
+      rgb(255 138 61 / 0.220) 0%,
+      rgb(255 138 61 / 0.218) 8%,
+      rgb(255 138 61 / 0.207) 16%,
+      rgb(255 138 61 / 0.184) 24%,
+      rgb(255 138 61 / 0.150) 32%,
+      rgb(255 138 61 / 0.110) 40%,
+      rgb(255 138 61 / 0.070) 48%,
+      rgb(255 138 61 / 0.036) 56%,
+      rgb(255 138 61 / 0.013) 64%,
+      rgb(255 138 61 / 0.002) 72%,
+      rgb(255 138 61 / 0.000) 80%
+    ),
+    radial-gradient(
+      ellipse 80% 60% at 55% 100%,
+      rgb(183 77 0 / 0.120) 0%,
+      rgb(183 77 0 / 0.119) 8%,
+      rgb(183 77 0 / 0.113) 16%,
+      rgb(183 77 0 / 0.100) 24%,
+      rgb(183 77 0 / 0.082) 32%,
+      rgb(183 77 0 / 0.060) 40%,
+      rgb(183 77 0 / 0.038) 48%,
+      rgb(183 77 0 / 0.020) 56%,
+      rgb(183 77 0 / 0.007) 64%,
+      rgb(183 77 0 / 0.001) 72%,
+      rgb(183 77 0 / 0.000) 80%
+    );
 }
 
 .dark {
@@ -367,6 +412,51 @@
       rgb(204 84 36 / 0.097) 53%,
       rgb(204 84 36 / 0.038) 62%,
       rgb(204 84 36 / 0.007) 71%,
+      rgb(204 84 36 / 0.000) 80%
+    );
+
+  --wash-intro:
+    var(--wash-noise),
+    radial-gradient(
+      ellipse 70% 60% at 28% 30%,
+      rgb(250 150 58 / 0.160) 0%,
+      rgb(250 150 58 / 0.159) 8%,
+      rgb(250 150 58 / 0.151) 16%,
+      rgb(250 150 58 / 0.134) 23%,
+      rgb(250 150 58 / 0.109) 31%,
+      rgb(250 150 58 / 0.080) 39%,
+      rgb(250 150 58 / 0.051) 47%,
+      rgb(250 150 58 / 0.026) 55%,
+      rgb(250 150 58 / 0.009) 62%,
+      rgb(250 150 58 / 0.001) 70%,
+      rgb(250 150 58 / 0.000) 78%
+    ),
+    radial-gradient(
+      ellipse 60% 60% at 76% 38%,
+      rgb(232 108 50 / 0.130) 0%,
+      rgb(232 108 50 / 0.129) 8%,
+      rgb(232 108 50 / 0.122) 16%,
+      rgb(232 108 50 / 0.109) 24%,
+      rgb(232 108 50 / 0.089) 32%,
+      rgb(232 108 50 / 0.065) 40%,
+      rgb(232 108 50 / 0.041) 48%,
+      rgb(232 108 50 / 0.021) 56%,
+      rgb(232 108 50 / 0.008) 64%,
+      rgb(232 108 50 / 0.001) 72%,
+      rgb(232 108 50 / 0.000) 80%
+    ),
+    radial-gradient(
+      ellipse 80% 60% at 55% 100%,
+      rgb(204 84 36 / 0.140) 0%,
+      rgb(204 84 36 / 0.139) 8%,
+      rgb(204 84 36 / 0.132) 16%,
+      rgb(204 84 36 / 0.117) 24%,
+      rgb(204 84 36 / 0.096) 32%,
+      rgb(204 84 36 / 0.070) 40%,
+      rgb(204 84 36 / 0.044) 48%,
+      rgb(204 84 36 / 0.023) 56%,
+      rgb(204 84 36 / 0.008) 64%,
+      rgb(204 84 36 / 0.001) 72%,
       rgb(204 84 36 / 0.000) 80%
     );
 }
@@ -608,8 +698,296 @@ main:focus {
   }
 }
 
+/*
+ * Agent intro (AgentIntro.astro). Shown only under html.intro (set before first
+ * paint on a first visit) and html.intro-leaving (the exit). It is a fixed
+ * layer and only opacity and transforms move, so the page never shifts.
+ */
+:root {
+  --font-code:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --intro-out: 500ms;
+}
+.intro-fast {
+  --intro-out: 150ms;
+}
+
+.agent-intro {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow-y: auto;
+  padding: 1.5rem 1rem;
+  background-color: var(--background);
+  background-image: var(--wash-intro);
+  transition: opacity var(--intro-out) ease-in-out;
+}
+.intro .agent-intro,
+.intro-leaving .agent-intro {
+  display: flex;
+}
+.intro-leaving .agent-intro {
+  opacity: 0;
+}
+
+/* margin: auto centres it and keeps the top reachable on short screens. */
+.ai-stage {
+  margin: auto;
+  width: min(100%, 35rem);
+  transition:
+    opacity calc(var(--intro-out) * 0.5) ease-out,
+    transform var(--intro-out) var(--ease-out);
+  animation: ai-in 380ms var(--ease-out) backwards;
+}
+/* Exit: the window settles back and fades a little ahead of the backdrop. */
+.intro-leaving .ai-stage {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.965);
+}
+@keyframes ai-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+.ai-window {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background-color: var(--card);
+  box-shadow: var(--shadow-media);
+}
+.ai-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 2.25rem;
+  padding: 0 0.875rem;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--window-bar);
+  color: var(--muted-foreground);
+  font: 500 0.75rem/1 var(--font-code);
+}
+.ai-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.ai-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--primary);
+}
+.agent-intro:is([data-phase="working"], [data-phase="done"]) .ai-status {
+  opacity: 1;
+}
+.agent-intro[data-phase="working"] .ai-status-dot {
+  animation: ai-pulse 1s ease-in-out infinite;
+}
+.agent-intro:not([data-phase="done"]) .ai-status-done,
+.agent-intro[data-phase="done"] .ai-status-working {
+  display: none;
+}
+@keyframes ai-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.ai-body {
+  display: grid;
+  gap: 1.125rem;
+  padding: 1.25rem 1.125rem 1.375rem;
+}
+@media (max-width: 400px) {
+  .agent-intro {
+    padding-inline: 0.75rem;
+  }
+}
+@media (min-width: 640px) {
+  .ai-body {
+    padding: 1.5rem 1.625rem 1.625rem;
+  }
+}
+
+/* The visitor's prompt: a bubble at its final size from the start. */
+.ai-prompt {
+  justify-self: end;
+  max-width: 88%;
+  margin: 0;
+  padding: 0.55rem 0.875rem;
+  border-radius: 12px 12px 4px 12px;
+  background-color: var(--secondary);
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.ai-rest {
+  color: transparent;
+}
+.ai-caret {
+  margin-right: -2px;
+  border-left: 2px solid var(--primary);
+  animation: ai-blink 900ms steps(1) infinite;
+}
+.agent-intro:not([data-phase="typing"]) .ai-caret {
+  visibility: hidden;
+}
+@keyframes ai-blink {
+  50% {
+    border-color: transparent;
+  }
+}
+
+/* Tool calls: icon, tool name, argument. Each is hidden until .is-on. */
+.ai-steps {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-code);
+  font-size: 0.78125rem;
+  line-height: 1.5;
+}
+@media (max-width: 400px) {
+  .ai-steps {
+    font-size: 0.71875rem;
+  }
+}
+.ai-step {
+  display: grid;
+  grid-template-columns: 1rem 8.5ch minmax(0, 1fr);
+  column-gap: 0.625rem;
+}
+.ai-tool {
+  color: var(--primary);
+}
+.ai-arg {
+  color: var(--muted-foreground);
+  overflow-wrap: break-word;
+}
+.ai-step,
+.ai-reply {
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+.ai-step.is-on,
+.ai-reply.is-on {
+  opacity: 1;
+  transform: none;
+}
+.ai-icon {
+  position: relative;
+  height: 1.5em;
+}
+.ai-spinner,
+.ai-check {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+.ai-spinner {
+  width: 11px;
+  height: 11px;
+  border: 2px solid color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: ai-spin 700ms linear infinite;
+}
+.ai-check {
+  color: var(--primary);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 160ms ease,
+    transform 160ms var(--ease-out);
+}
+.ai-step.is-done .ai-spinner {
+  visibility: hidden;
+}
+.ai-step.is-done .ai-check {
+  opacity: 1;
+  transform: none;
+}
+@keyframes ai-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.ai-reply {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.ai-skip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.875rem 0 0 auto;
+  padding: 0.375rem 0.625rem 0.375rem 0.75rem;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+.ai-skip:hover {
+  background-color: color-mix(in srgb, var(--muted) 70%, transparent);
+  color: var(--foreground);
+}
+.ai-skip:focus-visible {
+  outline-offset: 1px;
+}
+.ai-skip kbd {
+  padding: 0.0625rem 0.3125rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: 500 0.6875rem/1.4 var(--font-code);
+}
+
+/* Hold the hero entrance, and any reveal that already fired, until the intro
+   leaves: they play as it exits instead of unseen underneath. */
+.js-motion.intro :is(.hero-rise, .hero-fade, .hero-wash) {
+  animation: none;
+}
+.js-motion.intro [data-reveal="fade"].is-visible,
+.js-motion.intro [data-reveal="row"].is-visible :is(.row-media, .row-text) {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.js-motion.intro [data-reveal="line"].is-visible::after {
+  transform: scaleX(0);
+}
+
+/* The footer "Replay intro" button: shown by the intro script, never with
+   reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  #replay-intro {
+    display: none;
+  }
+}
+
 /* Print: everything visible, nothing animated. */
 @media print {
+  .agent-intro {
+    display: none !important;
+  }
   .hero-rise,
   .hero-fade,
   [data-reveal],

@@ -1,5 +1,7 @@
 ---
 import "../styles/global.css"
+import AgentIntro from "@/components/AgentIntro.astro"
+import { site } from "@/content/site"
 import interUrl from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url"
 import instrumentUrl from "@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2?url"
 
@@ -9,6 +11,7 @@ interface Props {
 }
 
 const { title, description } = Astro.props
+const introEnabled = site.intro.enabled
 ---
 
 <!doctype html>
@@ -68,6 +71,41 @@ const { title, description } = Astro.props
         window.addEventListener("beforeprint", reveal)
       })()
     </script>
+    <!--
+      First-visit intro (AgentIntro.astro). Decided here, before first paint, so
+      returning visitors never see the overlay and first-time visitors never see
+      the page flash first. Fails open: reduced motion, no inert support or no
+      localStorage means no intro, and so does no JS (nothing adds the class).
+      "intro-seen" is stored now, so a reload mid-intro does not replay it. The
+      failsafe drops the overlay after 7s if the intro script never started
+      (once started, it has its own 7s failsafe). Off: `intro.enabled` in site.ts.
+    -->
+    {introEnabled && (
+      <script is:inline>
+        (function () {
+          var root = document.documentElement
+          try {
+            if (
+              matchMedia("(prefers-reduced-motion: reduce)").matches ||
+              !("inert" in HTMLElement.prototype) ||
+              localStorage.getItem("intro-seen")
+            )
+              return
+            localStorage.setItem("intro-seen", "1")
+          } catch (e) {
+            return
+          }
+          root.classList.add("intro")
+          setTimeout(function () {
+            if (root.hasAttribute("data-intro-ready")) return
+            root.classList.remove("intro", "intro-leaving")
+            document.querySelectorAll("body > [inert]").forEach(function (el) {
+              el.inert = false
+            })
+          }, 7000)
+        })()
+      </script>
+    )}
     <noscript>
       <style>
         #theme-toggle {
@@ -77,6 +115,7 @@ const { title, description } = Astro.props
     </noscript>
   </head>
   <body class="min-h-screen">
+    {introEnabled && <AgentIntro />}
     <a
       href="#main"
       class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-background focus-visible:px-3 focus-visible:py-2 focus-visible:text-foreground"

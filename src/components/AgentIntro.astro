@@ -1,0 +1,213 @@
+---
+import { site } from "@/content/site"
+
+const { intro } = site
+---
+
+{/*
+  First-visit intro: a mock agent session that "builds" the site, then gets out
+  of the way. Hidden unless html.intro (set before first paint by the head
+  script in Base.astro, first visit only) or html.intro-leaving (the exit).
+  The page stays fully rendered underneath and is inert while this shows.
+  The animated window is aria-hidden: assistive tech gets the dialog's name,
+  a one-line description and the Skip button. Styles: "Agent intro" in
+  global.css. Copy: `intro` in site.ts.
+*/}
+<div
+  id="agent-intro"
+  class="agent-intro"
+  role="dialog"
+  aria-modal="true"
+  aria-label={intro.label}
+  aria-describedby="agent-intro-desc"
+  data-nosnippet
+>
+  <div class="ai-stage">
+    <p id="agent-intro-desc" class="sr-only">{intro.description}</p>
+    <div class="ai-window" aria-hidden="true">
+      <div class="ai-bar">
+        <span>{intro.windowTitle}</span>
+        <span class="ai-status">
+          <i class="ai-status-dot"></i>
+          <span class="ai-status-working">working</span>
+          <span class="ai-status-done">done</span>
+        </span>
+      </div>
+      <div class="ai-body">
+        {/* Typed text, caret, then the rest of the prompt (transparent, so
+            the bubble keeps its final size while it types). One line on
+            purpose: no whitespace between the spans. */}
+        <p class="ai-prompt"><span data-typed></span><span class="ai-caret"></span><span class="ai-rest" data-rest>{intro.prompt}</span></p>
+        <ol class="ai-steps">
+          {
+            intro.steps.map((step) => (
+              <li class="ai-step" data-line>
+                <span class="ai-icon">
+                  <i class="ai-spinner" />
+                  <svg
+                    class="ai-check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    focusable="false"
+                  >
+                    <path d="M3.5 8.5l3 3 6-7" />
+                  </svg>
+                </span>
+                <span class="ai-tool">{step.tool}</span>
+                <span class="ai-arg">
+                  {/* Let paths wrap after a slash on narrow screens. */}
+                  {step.arg.split("/").map((part, i) => (i ? <Fragment>/<wbr />{part}</Fragment> : part))}
+                </span>
+              </li>
+            ))
+          }
+        </ol>
+        <p class="ai-reply" data-reply>{intro.reply}</p>
+      </div>
+    </div>
+    <button type="button" class="ai-skip" data-skip>
+      {intro.skip}<kbd aria-hidden="true">Esc</kbd>
+    </button>
+  </div>
+</div>
+
+<script is:inline>
+  // Intro controller. One rAF timeline (ms after the first frame); CSS does the
+  // easing. Ends on its own, on Skip / any key, click, wheel, touch or scroll,
+  // or after 7s whatever happens. The footer "Replay intro" button reruns it.
+  (function () {
+    var root = document.documentElement
+    var overlay = document.getElementById("agent-intro")
+    if (!overlay) return
+    var skip = overlay.querySelector("[data-skip]")
+    var typed = overlay.querySelector("[data-typed]")
+    var rest = overlay.querySelector("[data-rest]")
+    var lines = overlay.querySelectorAll("[data-line]")
+    var reply = overlay.querySelector("[data-reply]")
+    var text = rest.textContent
+    var reduceMotion = matchMedia("(prefers-reduced-motion: reduce)")
+
+    // Prompt types 200-900, steps share 1000-3700 evenly (spinner, then a
+    // check), reply at 3750, exit 4150-4650. A skip fades out in 150ms.
+    var TYPE = [200, 900]
+    var STEPS = [1000, 3700]
+    var REPLY = 3750
+    var EXIT = 4150
+    var EXIT_MS = 500
+    var SKIP_MS = 150
+    var gap = (STEPS[1] - STEPS[0]) / lines.length
+    var SKIP_ON = ["pointerdown", "click", "keydown", "wheel", "touchstart", "scroll"]
+    var running = false
+    var ending = false
+    var frame, failsafe
+
+    function render(t) {
+      var p = (t - TYPE[0]) / (TYPE[1] - TYPE[0])
+      var n = Math.round(Math.max(0, Math.min(1, p)) * text.length)
+      if (typed.textContent.length !== n) {
+        typed.textContent = text.slice(0, n)
+        rest.textContent = text.slice(n)
+      }
+      var phase = t < STEPS[0] ? "typing" : t < REPLY ? "working" : "done"
+      if (overlay.getAttribute("data-phase") !== phase)
+        overlay.setAttribute("data-phase", phase)
+      lines.forEach(function (line, i) {
+        var on = STEPS[0] + i * gap
+        line.classList.toggle("is-on", t >= on)
+        line.classList.toggle("is-done", t >= on + gap * 0.8)
+      })
+      reply.classList.toggle("is-on", t >= REPLY)
+    }
+
+    function setPageInert(value) {
+      Array.prototype.forEach.call(document.body.children, function (el) {
+        if (el !== overlay) el.inert = value
+      })
+    }
+
+    function onSkip() {
+      end(true)
+    }
+
+    function listen(on) {
+      SKIP_ON.forEach(function (type) {
+        window[on ? "addEventListener" : "removeEventListener"](type, onSkip, {
+          capture: true,
+          passive: true,
+        })
+      })
+    }
+
+    function start() {
+      root.setAttribute("data-intro-ready", "")
+      running = true
+      ending = false
+      render(0)
+      root.classList.remove("intro-leaving", "intro-fast")
+      root.classList.add("intro")
+      setPageInert(true)
+      skip.focus({ preventScroll: true })
+      failsafe = setTimeout(onSkip, 7000)
+      var t0
+      frame = requestAnimationFrame(function tick(now) {
+        // Listen from the first frame, so the event that started a replay
+        // (and the scroll back to the top) cannot end it.
+        if (t0 === undefined) {
+          t0 = now
+          listen(true)
+        }
+        render(now - t0)
+        if (now - t0 >= EXIT) end(false)
+        else frame = requestAnimationFrame(tick)
+      })
+    }
+
+    function end(fast) {
+      if (!running || ending) return
+      ending = true
+      cancelAnimationFrame(frame)
+      clearTimeout(failsafe)
+      listen(false)
+      setPageInert(false)
+      // Focus goes back to the top of the page: the next Tab lands on the
+      // skip link, the first stop after the overlay.
+      if (overlay.contains(document.activeElement)) document.activeElement.blur()
+      // Removing .intro starts the hero entrance under the fading overlay.
+      root.classList.toggle("intro-fast", fast)
+      root.classList.add("intro-leaving")
+      root.classList.remove("intro")
+      setTimeout(
+        function () {
+          root.classList.remove("intro-leaving", "intro-fast")
+          running = false
+        },
+        fast ? SKIP_MS : EXIT_MS
+      )
+    }
+
+    function init() {
+      skip.addEventListener("click", onSkip)
+      var replay = document.getElementById("replay-intro")
+      if (replay && !reduceMotion.matches) {
+        replay.hidden = false
+        replay.addEventListener("click", function () {
+          if (running || reduceMotion.matches) return
+          start()
+          window.scrollTo({ top: 0, behavior: "instant" })
+        })
+      }
+      if (root.classList.contains("intro")) start()
+    }
+
+    if (document.readyState === "loading")
+      document.addEventListener("DOMContentLoaded", init)
+    else init()
+  })()
+</script>

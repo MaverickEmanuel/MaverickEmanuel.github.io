@@ -59,6 +59,27 @@ export interface OffTheClockItem {
   text: string
 }
 
+/** One tool-call line in the intro: a short tool name and its argument. */
+export interface IntroStep {
+  tool: string
+  arg: string
+}
+
+export interface AgentIntro {
+  /** `false` turns the intro and the footer replay button off entirely. */
+  enabled: boolean
+  /** Accessible name of the overlay. */
+  label: string
+  /** Short screen-reader description; the animated lines are hidden from AT. */
+  description: string
+  /** Small title in the window bar. */
+  windowTitle: string
+  prompt: string
+  steps: IntroStep[]
+  reply: string
+  skip: string
+}
+
 export interface SiteContent {
   title: string
   description: string
@@ -83,7 +104,9 @@ export interface SiteContent {
   offTheClock: { heading: string; updated: string; items: OffTheClockItem[] }
   /** Quiet closing line before the footer; `link` is rendered inline. */
   closing: { text: string; link: Link; suffix: string }
-  footer: { copyright: string; profiles: Link[] }
+  footer: { copyright: string; profiles: Link[]; replayIntro: string }
+  /** First-visit intro overlay (see AgentIntro.astro and the README). */
+  intro: AgentIntro
   labels: { problem: string; built: string; why: string }
 }
 
@@ -271,5 +294,28 @@ export const site: SiteContent = {
   footer: {
     copyright: "© 2026 Maverick Emanuel",
     profiles,
+    replayIntro: "Replay intro",
+  },
+
+  // First-visit intro: a condensed, honest replay of how this site was built.
+  // Six to eight steps fit the timing (it spreads them evenly over ~2.8s).
+  intro: {
+    enabled: true,
+    label: "Intro",
+    description:
+      "A few seconds of an agent building this site. Skip it to go straight to the page.",
+    windowTitle: "~/portfolio",
+    prompt: "Build a portfolio site for Maverick Emanuel.",
+    steps: [
+      { tool: "read", arg: "resume + project notes" },
+      { tool: "fetch", arg: "github.com/MaverickEmanuel · roflow.co" },
+      { tool: "choose", arg: "palette “Golden Hour” · Instrument Sans + Inter" },
+      { tool: "delegate", arg: "→ subagents: hero, projects, experience" },
+      { tool: "write", arg: "src/components/*.astro" },
+      { tool: "run", arg: "pnpm build" },
+      { tool: "check", arg: "screenshots · light + dark" },
+    ],
+    reply: "Done. Opening the site.",
+    skip: "Skip",
   },
 }

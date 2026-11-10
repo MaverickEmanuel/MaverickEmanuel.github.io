@@ -9,7 +9,18 @@ const { footer } = site
   <div
     class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-border py-8 text-sm text-muted-foreground"
   >
-    <p class="m-0">{footer.copyright}</p>
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-1">
+      <p class="m-0">{footer.copyright}</p>
+      {/* Shown by the intro script (AgentIntro.astro) when motion is allowed. */}
+      <button
+        id="replay-intro"
+        type="button"
+        hidden
+        class="cursor-pointer rounded-sm py-1 text-muted-foreground underline decoration-border decoration-1 underline-offset-[0.22em] transition-colors hover:text-foreground hover:decoration-current"
+      >
+        {footer.replayIntro}
+      </button>
+    </div>
     <div class="flex items-center gap-x-5">
       {
         footer.profiles.map((profile) => (
