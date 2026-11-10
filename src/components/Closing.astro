@@ -1,0 +1,15 @@
+---
+import ExternalLink from "@/components/ExternalLink.astro"
+import { site } from "@/content/site"
+
+const { closing } = site
+---
+
+<section
+  aria-label="Contact"
+  class="mx-auto w-full max-w-[1120px] px-6 pb-[var(--space-section-sm)] sm:px-8"
+>
+  <p class="m-0 max-w-[62ch] text-base text-muted-foreground">
+    {closing.text}{" "}<ExternalLink href={closing.link.href}>{closing.link.label}</ExternalLink>{closing.suffix}
+  </p>
+</section>

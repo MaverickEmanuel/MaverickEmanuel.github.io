@@ -2,23 +2,30 @@
 interface Props {
   href: string
   class?: string
+  /** "link" (default): inline accent link. "button": accent pill. */
+  variant?: "link" | "button"
 }
 
-const { href, class: className } = Astro.props
+const { href, class: className, variant = "link" } = Astro.props
+const isButton = variant === "button"
 ---
 
 <a
   href={href}
   target="_blank"
   rel="noopener noreferrer"
-  class:list={["link inline-flex items-baseline gap-1 rounded-sm", className]}
+  class:list={[
+    "group inline-flex",
+    isButton ? "link-button items-center gap-2" : "link items-baseline gap-1 rounded-sm",
+    className,
+  ]}
 >
   <span><slot /></span>
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
-    width="14"
-    height="14"
+    width={isButton ? 16 : 14}
+    height={isButton ? 16 : 14}
     fill="none"
     stroke="currentColor"
     stroke-width="2"
@@ -26,7 +33,10 @@ const { href, class: className } = Astro.props
     stroke-linejoin="round"
     aria-hidden="true"
     focusable="false"
-    class="relative top-[0.1em] shrink-0 self-center"
+    class:list={[
+      "shrink-0 self-center transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:transform-none",
+      !isButton && "relative top-[0.1em]",
+    ]}
   >
     <path d="M7 17 17 7M8 7h9v9"></path>
   </svg>

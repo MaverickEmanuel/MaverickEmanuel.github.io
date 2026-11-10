@@ -7,23 +7,29 @@ const { hero } = site
 
 <section id="intro" aria-labelledby="intro-heading" class="w-full overflow-x-clip">
   <div
-    class="mx-auto grid w-full max-w-[1120px] px-6 pt-6 sm:px-8 md:pt-12 pb-[var(--space-section)] items-center gap-8 md:grid-cols-[minmax(0,1fr)_220px] md:gap-12 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-24"
+    class="mx-auto grid w-full max-w-[1120px] px-6 pt-6 sm:px-8 md:pt-12 pb-[var(--space-section)] items-center gap-10 md:grid-cols-[minmax(0,1fr)_220px] md:gap-12 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-24"
   >
-    <div class="enter relative z-10 md:col-start-1 md:row-start-1">
-      <p class="mb-5 text-base font-medium tracking-[0.01em] text-muted-foreground">
+    <div class="relative z-10 md:col-start-1 md:row-start-1">
+      <p
+        class="hero-rise mb-5 text-base font-medium tracking-[0.01em] text-muted-foreground"
+        style="--d: 0ms"
+      >
         {hero.greeting}
       </p>
-      <h1 id="intro-heading" class="max-w-[15em] text-balance">{hero.headline}</h1>
-      <div class="mt-7 max-w-[62ch] space-y-4">
+      <h1 id="intro-heading" class="hero-rise max-w-[15em] text-balance" style="--d: 80ms">
+        {hero.headline}
+      </h1>
+      <div class="hero-rise mt-7 max-w-[62ch] space-y-4" style="--d: 160ms">
         {hero.paragraphs.map((text) => <p>{text}</p>)}
       </div>
     </div>
 
+    {/* Text first on mobile (H1 before the portrait), small portrait below. */}
     <div
-      class="enter relative order-first w-40 md:order-none md:col-start-2 md:row-start-1 md:w-full md:justify-self-end"
+      class="relative w-28 md:col-start-2 md:row-start-1 md:w-full md:justify-self-end"
     >
       <div class="hero-wash" aria-hidden="true"></div>
-      <div class="relative z-10">
+      <div class="hero-fade relative z-10" style="--d: 240ms">
         <Portrait />
       </div>
     </div>

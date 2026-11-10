@@ -34,6 +34,8 @@ export type ProjectMedia =
 export interface Project {
   id: string
   title: string
+  /** One-line result, shown directly under the title. */
+  outcome: string
   /** Shown one part per line; read aloud joined with a middle dot. */
   meta: string[]
   problem: string
@@ -52,6 +54,11 @@ export interface ExperienceEntry {
   description?: string
 }
 
+export interface OffTheClockItem {
+  label: string
+  text: string
+}
+
 export interface SiteContent {
   title: string
   description: string
@@ -66,8 +73,16 @@ export interface SiteContent {
   /** `null` renders the monogram placeholder. */
   portrait: Portrait | null
   work: { heading: string; projects: Project[] }
-  experience: { heading: string; entries: ExperienceEntry[] }
-  offTheClock: { heading: string; text: string }
+  experience: {
+    heading: string
+    /** The featured, current role. */
+    entries: ExperienceEntry[]
+    /** Quieter sub-group under the roles: degree and certifications. */
+    education: { heading: string; entries: ExperienceEntry[] }
+  }
+  offTheClock: { heading: string; updated: string; items: OffTheClockItem[] }
+  /** Quiet closing line before the footer; `link` is rendered inline. */
+  closing: { text: string; link: Link; suffix: string }
   footer: { copyright: string; profiles: Link[] }
   labels: { problem: string; built: string; why: string }
 }
@@ -117,6 +132,7 @@ const profiles: Link[] = [
   { label: "GitHub", href: "https://github.com/MaverickEmanuel" },
   { label: "LinkedIn", href: "https://www.linkedin.com/in/maverick-emanuel/" },
 ]
+const linkedin = profiles[1]
 
 export const site: SiteContent = {
   title: "Maverick Emanuel · Software engineer",
@@ -129,8 +145,8 @@ export const site: SiteContent = {
     greeting: "Hi, I'm Maverick.",
     headline: "I build AI systems, and the software that makes them useful.",
     paragraphs: [
-      "I'm a software engineer in Toronto. I work on the AI team at MPAC, and I co-founded Roflow, an AI-native IDE for Roblox developers. The part I like most is the layer between a model and a real workflow: tool design, context and evaluation are usually what make an AI system dependable.",
-      "I've also done hands-on LoRA fine-tuning on a team project at MPAC, and model adaptation is the area I most want to go deeper in.",
+      "I'm a software engineer in Toronto. I work on the AI team at MPAC, and I co‑founded Roflow, an AI-native IDE for Roblox developers. The part I like most is the layer between a model and a real workflow: tool design, context and evaluation are usually what make an AI system dependable.",
+      "I've done hands-on LoRA fine-tuning on a team project at MPAC, and model adaptation is where I want to go deeper next.",
     ],
   },
 
@@ -147,6 +163,8 @@ export const site: SiteContent = {
       {
         id: "roflow",
         title: "Roflow",
+        outcome:
+          "A desktop AI IDE for Roblox, taken from idea to public beta with my co-founder.",
         meta: ["Co-founder & Founding AI Engineer", "Public beta released July 2026"],
         problem:
           "Roblox developers split their work between Roblox Studio and a code editor, and general-purpose AI coding tools don't know how a Roblox project fits together.",
@@ -167,6 +185,7 @@ export const site: SiteContent = {
       {
         id: "demopilot",
         title: "DemoPilot",
+        outcome: "Turns a prompt into a reproducible product demo video.",
         meta: ["Open source (MIT) side project"],
         problem:
           "Product demo videos take a long time to record, and they go out of date as soon as the interface changes.",
@@ -202,25 +221,51 @@ export const site: SiteContent = {
         description:
           "Internal AI tools: LLM workflows and agents, retrieval, evaluation and guardrails, MCP servers, and the full-stack and AWS work around them.",
       },
-      {
-        id: "queens",
-        title:
-          "Bachelor of Computing (Honours), Artificial Intelligence Specialization",
-        organization: "Queen's University",
-        dates: "2021 – 2025",
-      },
-      {
-        id: "certifications",
-        title: "Certifications",
-        description:
-          "AWS Certified Cloud Practitioner, AWS Certified AI Practitioner",
-      },
     ],
+    education: {
+      heading: "Education & certifications",
+      entries: [
+        {
+          id: "queens",
+          title:
+            "Bachelor of Computing (Honours), Artificial Intelligence Specialization",
+          organization: "Queen's University",
+          dates: "2021 – 2025",
+        },
+        {
+          id: "certifications",
+          title: "Certifications",
+          description:
+            "AWS Certified Cloud Practitioner, AWS Certified AI Practitioner",
+        },
+      ],
+    },
   },
 
   offTheClock: {
     heading: "Off the clock",
-    text: "I make Roblox games, and I wrote a set of Claude Code skills and subagents to help me build them.",
+    updated: "Updated Nov 2026",
+    items: [
+      {
+        label: "Training for",
+        text: "a 5,000 m peak next year, after climbing a 4,700 m mountain in Yunnan, China.",
+      },
+      {
+        label: "Building",
+        text: "Shovel Snow Sim and Planet Sweeper on Roblox (both in progress), with a set of Claude Code skills and subagents I wrote to help make them.",
+      },
+      { label: "Playing", text: "World of Warcraft." },
+      {
+        label: "Otherwise",
+        text: "travelling, working out, and getting outside for the scenery.",
+      },
+    ],
+  },
+
+  closing: {
+    text: "Want to talk about AI systems or developer tools?",
+    link: { label: "Message me on LinkedIn", href: linkedin.href },
+    suffix: ".",
   },
 
   footer: {
