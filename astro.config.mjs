@@ -11,5 +11,10 @@ export default defineConfig({
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      // The lazy-loaded island chunk (three.js + src/island) is ~600 kB
+      // minified, ~150 kB gzipped. Classic visitors never download it.
+      chunkSizeWarningLimit: 700,
+    },
   },
 });

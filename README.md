@@ -1,8 +1,9 @@
 # portfolio-v3
 
 Single-page personal portfolio built with Astro, Tailwind CSS v4 and shadcn/ui
-tokens. Static output, no JavaScript files: only a few tiny inline scripts (theme,
-entrance motion).
+tokens. Static output. The default view is a small 3D island (three.js, loaded
+on demand, see [Island](#island)); the classic page is always in the HTML and
+needs no JavaScript beyond a few tiny inline scripts (theme, entrance motion).
 
 Third-party credits and licences: see `THIRD_PARTY_NOTICES.md`.
 
@@ -66,3 +67,66 @@ All copy lives in `src/content/site.ts`. Components only render from it.
   desktop-app window frame on the gradient panel.
 - **DemoPilot video:** `public/media/demopilot-first-demo.mp4` with its poster
   `public/media/demopilot-poster.jpg`; paths are set in `site.ts`.
+
+## Island
+
+The default view is a low-poly island you walk around; each landmark opens a
+section of the site. The classic page stays fully rendered underneath (no-JS
+visitors, search engines and screen readers always get it), and both views
+share the same content from `src/content/site.ts`.
+
+### How the views work
+
+- **Before first paint** an inline script in `src/layouts/Base.astro` adds
+  `html.view-island` or `html.view-classic`. A saved choice (`localStorage`
+  key `view`: `island` or `classic`) wins. Otherwise it is the island, except
+  with `prefers-reduced-motion: reduce`, without WebGL support, or after the
+  island failed to start earlier in the session (`sessionStorage`
+  `island-failed`). With JS off neither class is set and only the classic page
+  shows. CSS for both states is at the end of `src/styles/global.css`.
+- **Switching:** any `[data-view-switch="island" | "classic"]` button ("Classic
+  view" in the island HUD, "Explore the island" in the header) stores the
+  choice and switches in place. `src/island/boot.ts` handles this; it is tiny
+  and has no three.js.
+- **Lazy loading:** `boot.ts` loads `src/island/index.ts` (and three.js) with a
+  dynamic `import()` only when the island is shown, so classic visitors
+  download none of it. The island chunk is about 150 kB gzipped.
+- **Fallback:** if WebGL cannot start (or the context is lost), the page
+  switches to classic and shows a one-line note.
+
+### Code map
+
+| File | What it does |
+| --- | --- |
+| `src/island/landmarks.ts` | The stations: id, label, section, model, position, facing, footprint. Pure data, shared by the HUD markup and the scene. |
+| `src/island/world.ts` | Ground height, paths, scattered trees and rocks, colliders, walkable radius. No three.js. |
+| `src/island/palette.ts` | Dusk (dark theme) and late-afternoon (light theme) lighting, fog and sky values; shared material colours. |
+| `src/island/scene.ts` | Renderer, camera, lights, sky, water, terrain, scenery; theme swap; dispose. |
+| `src/island/models.ts` | Landmark models built from primitives, plus a cached material/geometry kit. |
+| `src/island/character.ts` | The blocky player and its walk cycle. |
+| `src/island/controls.ts` | Keys, click/tap to walk, drag to orbit, wheel/pinch zoom, with limits. |
+| `src/island/ui.ts` | Station chips, open prompt, floating labels, hint, content dialog. |
+| `src/island/index.ts` | Wires it together: movement, camera follow, render loop, cleanup. |
+| `src/island/boot.ts` | View switching and lazy loading (see above). |
+| `src/components/island/IslandShell.astro` | The island's DOM: canvas, HUD, loader, dialog. |
+| `src/components/island/IslandPanels.astro` | Dialog content per station, rendered from `site.ts`. |
+
+### Moving or adding a landmark
+
+- **Move one:** change its `position` (`[x, z]`, the island's walkable radius
+  is about 23 units, the player spawns at the origin) in
+  `src/island/landmarks.ts`. `facing: faceCentre(x, z)` keeps it facing the
+  spawn plaza; paths, lamps, the flattened ground and colliders follow
+  automatically. Adjust `labelHeight` if the label sits too low or high.
+- **Add one:** add an entry to `landmarks` (its `id` is also the panel id),
+  add a `<template id="island-panel-{id}">` to `IslandPanels.astro` that
+  renders the content from `site.ts` (give its heading
+  `id="island-dialog-title" tabindex="-1"`), and either reuse a `model` or
+  add a builder to `src/island/models.ts` (front faces local +z, base on
+  y = 0). The chip, label and prompt appear automatically.
+
+### Changing the default view
+
+The default lives in the head script in `src/layouts/Base.astro`: replace the
+line that picks `"island"` (when no choice is saved) with `"classic"` to make
+the classic page the default and the island opt-in via "Explore the island".

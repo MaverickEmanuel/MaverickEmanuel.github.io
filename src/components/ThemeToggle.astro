@@ -1,5 +1,11 @@
 ---
 import { Button } from "@/components/ui/button"
+
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
 ---
 
 {/*
@@ -7,13 +13,16 @@ import { Button } from "@/components/ui/button"
   button will switch TO, driven purely by the `.dark` class (no JS, no flash).
   The static label matches the dark default; the inline script below keeps it
   in sync on every change. Hidden when scripts are off (see Base.astro).
+  Can appear more than once (classic header and island HUD): the script binds
+  every [data-theme-toggle] button once and keeps all labels in sync.
 */}
 <Button
-  id="theme-toggle"
+  data-theme-toggle=""
   type="button"
   variant="ghost"
   size="icon-lg"
   aria-label="Switch to light theme"
+  className={className}
 >
   <svg
     class="dark:hidden"
@@ -54,18 +63,18 @@ import { Button } from "@/components/ui/button"
 
 <script is:inline>
   (function () {
-    var button = document.getElementById("theme-toggle")
-    if (!button) return
     var root = document.documentElement
     var themeColor = document.getElementById("theme-color")
 
     function apply(theme) {
       root.classList.toggle("dark", theme === "dark")
       root.style.colorScheme = theme
-      button.setAttribute(
-        "aria-label",
-        theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
-      )
+      document.querySelectorAll("[data-theme-toggle]").forEach(function (button) {
+        button.setAttribute(
+          "aria-label",
+          theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+        )
+      })
       if (themeColor)
         themeColor.setAttribute("content", theme === "dark" ? "#1B1917" : "#FAF6EE")
     }
@@ -74,7 +83,7 @@ import { Button } from "@/components/ui/button"
 
     var reduceMotion = matchMedia("(prefers-reduced-motion: reduce)")
 
-    button.addEventListener("click", function () {
+    function toggle() {
       var next = root.classList.contains("dark") ? "light" : "dark"
       // Plain root cross-fade (duration in global.css) where supported;
       // otherwise, or with reduced motion, switch instantly.
@@ -88,6 +97,12 @@ import { Button } from "@/components/ui/button"
       try {
         localStorage.setItem("theme", next)
       } catch (e) {}
+    }
+
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (button) {
+      if (button.hasAttribute("data-bound")) return
+      button.setAttribute("data-bound", "")
+      button.addEventListener("click", toggle)
     })
   })()
 </script>

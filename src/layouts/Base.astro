@@ -44,6 +44,28 @@ const { title, description } = Astro.props
       })()
     </script>
     <!--
+      View: the 3D island (default) or the classic page. Decided before first
+      paint so neither view flashes. A saved choice (localStorage "view",
+      "island" or "classic", set by the switch buttons) wins; otherwise the
+      island, except with reduced motion, without WebGL support, or after the
+      island failed to start earlier this session. Without JS neither class is
+      set and only the classic page shows. src/island/boot.ts does the rest.
+    -->
+    <script is:inline>
+      (function () {
+        var view = null
+        var failed = false
+        try {
+          view = localStorage.getItem("view")
+          failed = sessionStorage.getItem("island-failed") === "1"
+        } catch (e) {}
+        if (view !== "island" && view !== "classic")
+          view = matchMedia("(prefers-reduced-motion: reduce)").matches ? "classic" : "island"
+        if (view === "island" && (failed || !window.WebGLRenderingContext)) view = "classic"
+        document.documentElement.classList.add("view-" + view)
+      })()
+    </script>
+    <!--
       Entrance motion is opt-in: the hidden "before" states in global.css only
       exist under html.js-motion, which is set here before first paint, and only
       when the browser can run the observer and has not asked for reduced
@@ -70,7 +92,8 @@ const { title, description } = Astro.props
     </script>
     <noscript>
       <style>
-        #theme-toggle {
+        [data-theme-toggle],
+        [data-view-switch] {
           display: none;
         }
       </style>
@@ -79,7 +102,7 @@ const { title, description } = Astro.props
   <body class="min-h-screen">
     <a
       href="#main"
-      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-background focus-visible:px-3 focus-visible:py-2 focus-visible:text-foreground"
+      class="skip-link sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-background focus-visible:px-3 focus-visible:py-2 focus-visible:text-foreground"
     >
       Skip to content
     </a>
