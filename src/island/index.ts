@@ -4,13 +4,14 @@
  * HUD together and runs the render loop.
  */
 import * as THREE from "three"
+import { IslandAudio } from "./audio"
 import { Character } from "./character"
 import { Controls } from "./controls"
 import { landmarks, standPoint, type Landmark } from "./landmarks"
 import type { Theme } from "./palette"
 import { createScene } from "./scene"
 import { Hud } from "./ui"
-import { BASE_Y, groundHeight, resolvePosition } from "./world"
+import { BASE_Y, groundHeight, resolvePosition, surfaceAt } from "./world"
 
 export interface IslandSession {
   dispose(): void
@@ -37,6 +38,7 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   const themeOf = (): Theme => (document.documentElement.classList.contains("dark") ? "dark" : "light")
   world.applyTheme(themeOf())
 
+  const audio = new IslandAudio()
   const player = new Character(world.kit)
   world.scene.add(player.group)
   const pos = new THREE.Vector3(0, BASE_Y, 2)
@@ -48,6 +50,7 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   /** Height above the ground and vertical speed of a jump (0 when grounded). */
   let air = 0
   let airSpeed = 0
+  let wasAirborne = false
 
   // Tap marker: a flat ring where a click/tap sent the player.
   const marker = new THREE.Mesh(
@@ -58,11 +61,24 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   marker.visible = false
   world.scene.add(marker)
 
+  /** The landmark the open dialog shows (the camera frames it), and the eased blend 0..1. */
+  let focus: Landmark | null = null
+  let focusBlend = 0
+
   const hud = new Hud(root, {
+    audio,
+    reducedMotion: opts.reducedMotion,
     onStation: (id) => {
       const lm = landmarks.find((l) => l.id === id)
       if (lm) teleportTo(lm)
       hud.open(id)
+    },
+    onBrowse: (id) => {
+      const lm = landmarks.find((l) => l.id === id)
+      if (lm) teleportTo(lm)
+    },
+    onFocus: (id) => {
+      focus = id ? (landmarks.find((l) => l.id === id) ?? null) : null
     },
   })
 
@@ -74,7 +90,10 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     isBlocked: () => hud.dialogOpen,
     onInteract: () => hud.openNearby(),
     onJump: () => {
-      if (air === 0 && airSpeed === 0) airSpeed = JUMP_SPEED
+      if (air === 0 && airSpeed === 0) {
+        airSpeed = JUMP_SPEED
+        audio.unlock()
+      }
     },
     onFirstInput: () => hud.fadeHint(),
     onTap: (x, y) => {
@@ -139,6 +158,24 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     desiredCamera(camera.position)
     camera.lookAt(camTarget)
   }
+
+  // Camera framing for the open dialog: in front of the landmark, a little above.
+  const focusTarget = new THREE.Vector3()
+  const focusOffset = new THREE.Vector3()
+  const goal = new THREE.Vector3()
+  const orbitOffset = new THREE.Vector3()
+  function framing(lm: Landmark) {
+    focusTarget.set(lm.position[0], BASE_Y + Math.min(3.2, lm.labelHeight * 0.38), lm.position[1])
+    const distance = (lm.collider * 2.6 + 12) * (camera.aspect < 1 ? Math.pow(camera.aspect, -0.35) : 1)
+    // High enough that the player, standing in front, does not block the view.
+    const polar = 0.86
+    // A touch off-axis, so the landmark reads as a 3D object.
+    const az = lm.facing + 0.35
+    focusOffset.set(Math.sin(az) * Math.sin(polar), Math.cos(polar), Math.cos(az) * Math.sin(polar)).multiplyScalar(distance)
+  }
+  /** Wide screens: the dialog sits right of centre, so the framed landmark is shifted left. */
+  const wide = matchMedia("(min-width: 1100px)")
+  let viewShift = 0
 
   const forward = new THREE.Vector2()
   const right = new THREE.Vector2()
@@ -205,7 +242,14 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     player.group.position.copy(pos)
     player.group.position.y += air
     player.group.rotation.y = heading
+    const stepsBefore = player.steps
     player.update(dt, air > 0 ? 0 : speed, time, air > 0)
+    if (player.steps !== stepsBefore) audio.step(surfaceAt(pos.x, pos.z), Math.min(1, speed / WALK_SPEED))
+    if (wasAirborne && air === 0) {
+      audio.land()
+      audio.step(surfaceAt(pos.x, pos.z), 0.6)
+    }
+    wasAirborne = air > 0
 
     if (marker.visible) {
       const m = marker.material as THREE.MeshBasicMaterial
@@ -224,14 +268,34 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
       }
     }
     hud.setNearby(near)
+    world.setNear(near?.id ?? null)
+    const fire = landmarks.find((l) => l.model === "campfire")!
+    audio.update(dt, Math.hypot(pos.x - fire.position[0], pos.z - fire.position[1]))
 
-    // Camera.
+    // Camera: follow the player, or ease in to frame the landmark whose dialog is open.
+    const focusGoal = focus ? 1 : 0
+    focusBlend = opts.reducedMotion ? focusGoal : focusBlend + (focusGoal - focusBlend) * Math.min(1, dt * 3)
+    if (Math.abs(focusGoal - focusBlend) < 0.001) focusBlend = focusGoal
+    const b = focusBlend * focusBlend * (3 - 2 * focusBlend)
+    if (focus) framing(focus)
     const follow = opts.reducedMotion ? 1 : 1 - Math.exp(-dt * 5)
-    desired.set(pos.x, pos.y + 1.6, pos.z)
-    camTarget.lerp(desired, follow)
+    goal.set(pos.x, pos.y + 1.6, pos.z)
+    if (b > 0) goal.lerp(focusTarget, b)
+    camTarget.lerp(goal, follow)
     desiredCamera(desired)
+    orbitOffset.subVectors(desired, camTarget)
+    if (b > 0) orbitOffset.lerp(focusOffset, b)
+    desired.copy(camTarget).add(orbitOffset)
     camera.position.lerp(desired, opts.reducedMotion ? 1 : 1 - Math.exp(-dt * 8))
     camera.lookAt(camTarget)
+    const shift = wide.matches ? b * 0.2 : 0
+    if (Math.abs(shift - viewShift) > 0.0005 || (shift === 0 && viewShift !== 0)) {
+      viewShift = shift
+      const w = canvas.clientWidth || 1
+      const h = canvas.clientHeight || 1
+      if (shift > 0) camera.setViewOffset(w, h, w * shift, 0, w, h)
+      else camera.clearViewOffset()
+    }
     camera.updateMatrixWorld()
 
     // Floating labels.
@@ -247,7 +311,10 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   }
 
   // Resize with the container.
-  const resize = () => world.resize(canvas.clientWidth || root.clientWidth, canvas.clientHeight || root.clientHeight)
+  const resize = () => {
+    world.resize(canvas.clientWidth || root.clientWidth, canvas.clientHeight || root.clientHeight)
+    viewShift = -1
+  }
   const resizeObserver = new ResizeObserver(resize)
   resizeObserver.observe(root)
   resize()
@@ -269,6 +336,7 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     world.render()
   }
   const onVisibility = () => {
+    audio.setHidden(document.hidden)
     cancelAnimationFrame(raf)
     raf = 0
     if (!document.hidden) {
@@ -289,12 +357,30 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   step(0, 0)
   world.render()
   if (!document.hidden) raf = requestAnimationFrame(frame)
+  hud.welcomeIfNew()
 
+  // Dev only (pnpm dev): the temporary sound test panel. Not in production builds.
+  let disposeDev: (() => void) | null = null
   let disposed = false
+  if (import.meta.env.DEV) {
+    // Dev-only probe for automated checks (draw calls, player position, surface).
+    ;(window as unknown as Record<string, unknown>).__island = {
+      calls: () => world.renderer.info.render.calls,
+      triangles: () => world.renderer.info.render.triangles,
+      pos: () => ({ x: pos.x, y: pos.y, z: pos.z, surface: surfaceAt(pos.x, pos.z) }),
+      audio: () => audio.debugState(),
+    }
+    void import("./devSound").then((m) => {
+      if (!disposed) disposeDev = m.mountSoundPanel(root, audio)
+    })
+  }
+
   return {
     dispose() {
       if (disposed) return
       disposed = true
+      disposeDev?.()
+      audio.dispose()
       cancelAnimationFrame(raf)
       document.removeEventListener("visibilitychange", onVisibility)
       canvas.removeEventListener("webglcontextlost", onContextLost)

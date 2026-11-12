@@ -22,6 +22,8 @@ export type ModelKind =
   | "campfire"
   | "mailbox"
 
+import type { IconName } from "./icons"
+
 export interface Landmark {
   /** Also the panel id: <template id="island-panel-{id}">. */
   id: string
@@ -30,6 +32,10 @@ export interface Landmark {
   /** Which part of the site the station opens (shown under the label). */
   section: string
   model: ModelKind
+  /** Accent colour (popup strip, icon badge, chip, label, arrival ring). */
+  accent: string
+  /** Section icon (src/island/icons.ts). */
+  icon: IconName
   /** Ground position [x, z]. */
   position: [number, number]
   /** Rotation around the vertical axis, radians. */
@@ -51,6 +57,8 @@ export const landmarks: Landmark[] = [
     label: "Roflow",
     section: "Selected work",
     model: "studio",
+    accent: "#c4622d",
+    icon: "code",
     position: [-11, -8],
     facing: faceCentre(-11, -8),
     collider: 3.6,
@@ -61,6 +69,8 @@ export const landmarks: Landmark[] = [
     label: "DemoPilot",
     section: "Selected work",
     model: "camera",
+    accent: "#2f7f86",
+    icon: "videoCamera",
     position: [-15.5, 5],
     facing: faceCentre(-15.5, 5),
     collider: 2.4,
@@ -71,6 +81,8 @@ export const landmarks: Landmark[] = [
     label: "MPAC",
     section: "Experience",
     model: "office",
+    accent: "#5b6f9a",
+    icon: "buildings",
     position: [11.5, -9],
     facing: faceCentre(11.5, -9),
     collider: 3.4,
@@ -81,6 +93,8 @@ export const landmarks: Landmark[] = [
     label: "Queen's",
     section: "Education",
     model: "campus",
+    accent: "#8a4f6e",
+    icon: "graduationCap",
     position: [0, -16],
     facing: faceCentre(0, -16),
     collider: 4.2,
@@ -91,6 +105,8 @@ export const landmarks: Landmark[] = [
     label: "Campfire",
     section: "Off the clock",
     model: "campfire",
+    accent: "#e0873a",
+    icon: "campfire",
     position: [14, 6],
     facing: faceCentre(14, 6),
     collider: 2.6,
@@ -101,6 +117,8 @@ export const landmarks: Landmark[] = [
     label: "Mailbox",
     section: "Contact",
     model: "mailbox",
+    accent: "#6f8f4e",
+    icon: "envelopeSimple",
     position: [4.5, 19.5],
     facing: faceCentre(4.5, 19.5),
     collider: 1.2,

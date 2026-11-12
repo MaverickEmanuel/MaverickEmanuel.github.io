@@ -1,7 +1,7 @@
 ---
 /**
  * Content for the island's dialog, one inert <template id="island-panel-{id}">
- * per station (plus "intro"). Everything is rendered from src/content/site.ts,
+ * per station. Everything is rendered from src/content/site.ts,
  * the same data the classic page uses; ui.ts clones a template into the
  * dialog when a station opens. Each panel's heading is #island-dialog-title
  * (only one panel is ever in the DOM), which labels the dialog.
@@ -10,7 +10,7 @@ import ExternalLink from "@/components/ExternalLink.astro"
 import ProjectMedia from "@/components/ProjectMedia.astro"
 import { site, type Project } from "@/content/site"
 
-const { work, experience, offTheClock, closing, hero, labels } = site
+const { work, experience, offTheClock, closing, labels } = site
 const { education } = experience
 const projectById = (id: string) => work.projects.find((p) => p.id === id) as Project
 const projects = [projectById("roflow"), projectById("demopilot")]
@@ -18,14 +18,6 @@ const projects = [projectById("roflow"), projectById("demopilot")]
 const titleClass =
   "m-0 font-heading text-[clamp(1.5rem,3.2vw,1.875rem)] leading-[1.12] font-semibold tracking-[-0.015em] outline-none"
 ---
-
-<template id="island-panel-intro">
-  <p class="eyebrow mb-2">{hero.greeting}</p>
-  <h2 id="island-dialog-title" tabindex="-1" class={titleClass}>{hero.headline}</h2>
-  <div class="mt-5 space-y-4">
-    {hero.paragraphs.map((text) => <p class="m-0">{text}</p>)}
-  </div>
-</template>
 
 {
   projects.map((project) => (

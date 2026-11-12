@@ -4,13 +4,18 @@
  * colours and intensities on objects that already exist (applyTheme).
  */
 import * as THREE from "three"
-import { landmarks } from "./landmarks"
-import { buildModel, Kit, lampPost } from "./models"
+import { Ambient } from "./ambient"
+import { landmarks, standPoint } from "./landmarks"
+import { bakeStatic, buildModel, dock, Kit, lampPost, signpost } from "./models"
 import { colours, palettes, type Theme } from "./palette"
 import {
   BASE_Y,
+  DOCK,
   GRASS_RADIUS,
   SAND_RADIUS,
+  SAND_Y,
+  SIGNPOST,
+  dockPoint,
   groundHeight,
   paths,
   random,
@@ -26,6 +31,8 @@ export interface IslandScene {
   /** Objects a click/tap can land on. Landmark groups carry userData.landmarkId. */
   pickables: THREE.Object3D[]
   applyTheme(theme: Theme): void
+  /** The landmark the player is standing at (arrival ring, doors, lights), or null. */
+  setNear(id: string | null): void
   update(dt: number, time: number): void
   resize(width: number, height: number): void
   render(): void
@@ -119,6 +126,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
   scene.add(water)
   const waterPos = waterGeo.attributes.position as THREE.BufferAttribute
   const waterBase = Float32Array.from(waterPos.array as Float32Array)
+  // Calmer water near the shore, so the foam line sits on it.
+  const waterCalm = new Float32Array(waterPos.count)
+  for (let i = 0; i < waterPos.count; i++) {
+    const r = Math.hypot(waterBase[i * 3], waterBase[i * 3 + 2])
+    const t = Math.min(1, Math.max(0, (r - 30) / 14))
+    waterCalm[i] = 0.15 + 0.85 * t * t * (3 - 2 * t)
+  }
 
   // Sand beach under the grass.
   const sand = new THREE.Mesh(
@@ -131,11 +145,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
   pickables.push(sand)
 
   // Grass bank (open cylinder) between beach and grass top.
+  const bankHeight = BASE_Y - SAND_Y + 0.02
   const bank = new THREE.Mesh(
-    new THREE.CylinderGeometry(GRASS_RADIUS - 0.05, GRASS_RADIUS + 0.9, BASE_Y - 0.1, 44, 1, true),
+    new THREE.CylinderGeometry(GRASS_RADIUS - 0.02, GRASS_RADIUS + 0.9, bankHeight, 44, 1, true),
     kit.mat(colours.grassDark)
   )
-  bank.position.y = (BASE_Y - 0.1) / 2 + 0.28
+  bank.position.y = BASE_Y - bankHeight / 2
   bank.receiveShadow = true
   scene.add(bank)
 
@@ -154,7 +169,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
 
   scene.add(...buildTrees(kit), buildRocks(kit))
 
-  // Lamp posts beside each path.
+  // Light pools at dusk: under lamps, at each landmark's door, the fire and the dock lantern.
+  const pools: Array<[number, number, number, string]> = []
+
+  // Lamp posts beside each path (merged into one set of meshes).
+  const lamps = new THREE.Group()
   for (const p of paths) {
     const [x1, z1] = p.to
     const len = Math.hypot(x1, z1)
@@ -163,10 +182,35 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
     const z = z1 * t - (x1 / len) * 1.4
     const lamp = lampPost(kit)
     lamp.position.set(x, groundHeight(x, z), z)
-    scene.add(lamp)
+    lamps.add(lamp)
+    pools.push([x, z, 2.2, "#ffb066"])
   }
 
+  bakeStatic(lamps)
+  scene.add(lamps)
+
+  // Signpost on the plaza: an arrow per landmark, in its accent colour.
+  const post = signpost(
+    kit,
+    landmarks.map((lm) => [Math.atan2(lm.position[0] - SIGNPOST[0], lm.position[1] - SIGNPOST[1]), lm.accent] as [number, string])
+  )
+  post.position.set(SIGNPOST[0], BASE_Y + 0.1, SIGNPOST[1])
+  bakeStatic(post)
+  scene.add(post)
+
+  // The dock, off the south-east beach.
+  const jetty = dock(kit, DOCK.end - DOCK.start, DOCK.halfWidth, DOCK.deckY, DOCK.ramp)
+  const [jx, jz] = dockPoint(DOCK.start, 0)
+  jetty.position.set(jx, 0, jz)
+  jetty.rotation.y = DOCK.angle
+  bakeStatic(jetty)
+  scene.add(jetty)
+  pickables.push(jetty)
+  const [lx, lz] = dockPoint(DOCK.end - 0.15, DOCK.halfWidth - 0.1)
+  pools.push([lx, lz, 2.4, "#ffb066"])
+
   // Landmarks.
+  const arrivals = new Map<string, { fn: (t: number) => void; t: number }>()
   const spinners: THREE.Object3D[] = []
   const flames: THREE.Object3D[] = []
   let fireLight: THREE.PointLight | null = null
@@ -183,12 +227,55 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
       fireLight = new THREE.PointLight(colours.fire, 20, 16, 1.6)
       fireLight.position.set(lm.position[0], BASE_Y + 1.3, lm.position[1])
       scene.add(fireLight)
+      pools.push([lm.position[0], lm.position[1], 4.5, "#ff9a4a"])
+    } else {
+      const [px, pz] = standPoint(lm, 0.4)
+      pools.push([px, pz, 2, "#ffc27a"])
     }
+    if (model.userData.arrive) arrivals.set(lm.id, { fn: model.userData.arrive, t: 0 })
+    bakeStatic(model)
     scene.add(model)
     pickables.push(model)
   }
 
+  // Arrival ring: one ring, moved to whichever landmark the player is at.
+  const ringMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 48), ringMat)
+  ring.rotation.x = -Math.PI / 2
+  ring.renderOrder = 3
+  ring.visible = false
+  scene.add(ring)
+  const ringGlow = new THREE.Mesh(new THREE.CircleGeometry(1, 48), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }))
+  ringGlow.rotation.x = -Math.PI / 2
+  ringGlow.renderOrder = 3
+  ringGlow.visible = false
+  scene.add(ringGlow)
+  let nearId: string | null = null
+  let ringFade = 0
+
+  const fire = landmarks.find((l) => l.model === "campfire")!
+  const ambient = new Ambient(kit, {
+    lowPower: opts.lowPower,
+    fire: [fire.position[0], BASE_Y, fire.position[1]],
+    pools,
+  })
+  scene.add(ambient.group)
+
   let fireBase = 20
+
+  function setNear(id: string | null) {
+    if (id === nearId) return
+    nearId = id
+    const lm = landmarks.find((l) => l.id === id)
+    if (!lm) return
+    ringMat.color.set(lm.accent)
+    ;(ringGlow.material as THREE.MeshBasicMaterial).color.set(lm.accent)
+    const r = lm.collider + 0.9
+    for (const m of [ring, ringGlow]) {
+      m.position.set(lm.position[0], BASE_Y + 0.05, lm.position[1])
+      m.scale.setScalar(r)
+    }
+  }
 
   function applyTheme(theme: Theme) {
     const p = palettes[theme]
@@ -209,6 +296,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
     renderer.setClearColor(p.horizon)
     kit.setGlow(p.glow)
     fireBase = p.fireLight
+    ambient.applyTheme(theme)
   }
 
   function update(dt: number, time: number) {
@@ -217,19 +305,44 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
       const x = waterBase[i]
       const z = waterBase[i + 2]
       arr[i + 1] =
-        Math.sin(x * 0.16 + time * 0.9) * 0.11 +
-        Math.cos(z * 0.19 + time * 0.7) * 0.09 +
-        Math.sin((x + z) * 0.33 + time * 1.4) * 0.04
+        (Math.sin(x * 0.16 + time * 0.9) * 0.11 +
+          Math.cos(z * 0.19 + time * 0.7) * 0.09 +
+          Math.sin((x + z) * 0.33 + time * 1.4) * 0.04) *
+        waterCalm[i / 3]
     }
     waterPos.needsUpdate = true
+
+    // Arrival: ease each landmark's animation toward "here" or "away".
+    for (const [id, a] of arrivals) {
+      const goal = id === nearId ? 1 : 0
+      if (a.t === goal) continue
+      a.t += (goal - a.t) * Math.min(1, dt * 5)
+      if (Math.abs(goal - a.t) < 0.002) a.t = goal
+      a.fn(a.t)
+    }
+    ringFade += ((nearId ? 1 : 0) - ringFade) * Math.min(1, dt * 6)
+    const pulse = 0.5 + 0.5 * Math.sin(time * 3.2)
+    ringMat.opacity = ringFade * (0.55 + 0.3 * pulse)
+    ;(ringGlow.material as THREE.MeshBasicMaterial).opacity = ringFade * 0.14
+    ring.visible = ringGlow.visible = ringFade > 0.01
+    if (nearId) {
+      const base = (landmarks.find((l) => l.id === nearId)!.collider + 0.9)
+      ring.scale.setScalar(base * (1 + pulse * 0.04))
+    }
+    ambient.setFireBoost(arrivals.get("campfire")?.t ?? 0)
+    ambient.update(time)
 
     for (const o of spinners) {
       if (o.userData.spin) o.rotation.y += o.userData.spin * dt
       if (o.userData.spinX) o.rotation.x += o.userData.spinX * dt
     }
     const flicker = 1 + Math.sin(time * 13) * 0.06 + Math.sin(time * 7.3 + 1) * 0.05
-    for (const f of flames) f.scale.set(1, flicker + 0.05, 1)
-    if (fireLight) fireLight.intensity = fireBase * (0.9 + (flicker - 1) * 1.5)
+    for (const f of flames) {
+      const b = f.userData.boost ?? 0
+      f.scale.set(1 + 0.35 * b, (flicker + 0.05) * (1 + 0.45 * b), 1 + 0.35 * b)
+    }
+    const fireBoost = arrivals.get("campfire")?.t ?? 0
+    if (fireLight) fireLight.intensity = fireBase * (0.9 + (flicker - 1) * 1.5) * (1 + fireBoost * 0.6)
   }
 
   function resize(width: number, height: number) {
@@ -258,13 +371,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
     geometries.forEach((g) => g.dispose())
     materials.forEach((m) => m.dispose())
     kit.dispose()
+    ambient.dispose()
     sun.shadow.map?.dispose()
     renderer.dispose()
     renderer.forceContextLoss()
   }
 
   applyTheme("dark")
-  return { renderer, scene, camera, kit, pickables, applyTheme, update, resize, render, dispose }
+  return { renderer, scene, camera, kit, pickables, applyTheme, setNear, update, resize, render, dispose }
 }
 
 /** Grass top: a jittered grid sampled from groundHeight, clipped to a circle, one colour per face. */

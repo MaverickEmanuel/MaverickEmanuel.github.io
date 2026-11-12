@@ -22,6 +22,8 @@ export class Character {
   private swing = 0
   /** 0 on the ground, 1 fully in the jump pose. */
   private airBlend = 0
+  /** Counts footfalls (each time a foot comes down while walking): footstep sounds follow it. */
+  steps = 0
 
   constructor(kit: Kit) {
     const unit = kit.geo("box", () => new THREE.BoxGeometry(1, 1, 1))
@@ -72,7 +74,10 @@ export class Character {
   update(dt: number, speed: number, time: number, airborne = false) {
     const moving = Math.min(1, speed / 5)
     this.swing += (moving - this.swing) * Math.min(1, dt * 10)
+    const before = Math.floor(this.phase / Math.PI)
     this.phase += dt * (4 + speed * 1.6)
+    // A foot lands each half cycle (when the legs pass each other).
+    if (Math.floor(this.phase / Math.PI) !== before && this.swing > 0.35 && !airborne) this.steps++
     const s = Math.sin(this.phase) * 0.7 * this.swing
     this.legs[0].rotation.x = s
     this.legs[1].rotation.x = -s

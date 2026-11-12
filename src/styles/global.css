@@ -754,11 +754,35 @@ html.view-island,
   line-height: 1.35;
   color: var(--muted-foreground);
 }
-.island-theme {
+.island-top-end {
+  display: flex;
+  gap: 0.5rem;
   margin-left: auto;
+}
+.island-theme,
+.island-round {
+  display: grid;
+  place-items: center;
   border-radius: 9999px;
   width: 2.5rem;
   height: 2.5rem;
+  flex: none;
+}
+.island-round {
+  transition: border-color 150ms ease;
+}
+.island-round:hover {
+  border-color: var(--primary);
+}
+.island-sound-off,
+#island.is-muted .island-sound-on {
+  display: none;
+}
+#island.is-muted .island-sound-off {
+  display: contents;
+}
+.island-sound-on {
+  display: contents;
 }
 
 .island-bottom {
@@ -791,28 +815,6 @@ html.view-island,
   font: 600 0.75rem/1.5 var(--font-sans);
   text-align: center;
 }
-.island-prompt {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 2.75rem;
-  padding: 0 1.15rem;
-  border-radius: 9999px;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  box-shadow: 0 12px 30px -12px rgb(20 12 4 / 0.55);
-  animation: rise 220ms var(--ease-out) both;
-}
-.island-prompt[hidden] {
-  display: none;
-}
-.island-prompt kbd {
-  background: var(--primary-foreground);
-  color: var(--foreground);
-  border-color: transparent;
-}
 .island-stations {
   max-width: 100%;
 }
@@ -825,30 +827,6 @@ html.view-island,
   overflow-x: auto;
   scrollbar-width: none;
 }
-.island-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0.45rem 0.9rem 0.5rem;
-  border-radius: 12px;
-  text-align: left;
-  white-space: nowrap;
-  transition: border-color 150ms ease;
-}
-.island-chip-name {
-  font-family: var(--font-heading);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-.island-chip-section {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--label-ink);
-}
-
 /* Floating landmark labels (positioned by ui.ts every frame). */
 .island-labels {
   position: absolute;
@@ -859,37 +837,6 @@ html.view-island,
 #island:not(.is-ready) .island-labels {
   visibility: hidden;
 }
-.island-label {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.3rem 0.7rem 0.35rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--background) 90%, transparent);
-  font-family: var(--font-heading);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  line-height: 1.15;
-  white-space: nowrap;
-  will-change: transform;
-  transition: border-color 200ms ease;
-}
-.island-label small {
-  font-family: var(--font-sans);
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--label-ink);
-}
-.island-label.is-near {
-  border-color: var(--primary);
-}
-
 /* Loader, shown until the scene's first frame is ready. */
 .island-loader {
   position: absolute;
@@ -935,7 +882,407 @@ html.view-island,
   }
 }
 
-/* Content dialog: centred card on wide screens, bottom sheet on phones. */
+/*
+ * Island game UI: icon badges, the arrival prompt, station chips, floating
+ * labels, the frosted panels (welcome card and content dialog) and their
+ * motion. Each landmark's accent arrives as --lm (set inline or by ui.ts);
+ * --lm-ink is a readable version of it for icons and text in either theme.
+ */
+#island {
+  --lm: var(--primary);
+  --glass: color-mix(in srgb, var(--background) 74%, transparent);
+  --glass-edge: color-mix(in srgb, var(--foreground) 13%, transparent);
+}
+#island [style*="--lm"],
+.island-dialog,
+.island-prompt {
+  --lm-ink: color-mix(in oklab, var(--lm) 72%, var(--foreground));
+  --lm-soft: color-mix(in srgb, var(--lm) 20%, transparent);
+}
+.island-icon {
+  display: block;
+  flex: none;
+}
+
+/* Icon badge: the accent-tinted square behind a landmark's icon. */
+.island-badge {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 9px;
+  background: var(--lm-soft, color-mix(in srgb, var(--lm) 20%, transparent));
+  color: var(--lm-ink, var(--lm));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lm) 32%, transparent);
+}
+.island-badge .island-icon path[opacity] {
+  opacity: 0.38;
+}
+.island-badge-sm {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 6px;
+}
+.island-badge-lg {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 12px;
+}
+.island-badge-lg .island-icon {
+  width: 24px;
+  height: 24px;
+}
+.island-visited-tick {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.3rem;
+  border-radius: 9999px;
+  background: var(--lm);
+  color: #fff;
+  vertical-align: -0.12em;
+}
+.island-visited-tick[hidden] {
+  display: none;
+}
+.island-visited-tick .island-icon path[opacity] {
+  display: none;
+}
+
+/* Arrival prompt: "Press E to open" with the landmark's badge. */
+.island-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3.25rem;
+  padding: 0.4rem 1.3rem 0.4rem 0.45rem;
+  border-radius: 9999px;
+  background: var(--glass);
+  border: 1.5px solid color-mix(in srgb, var(--lm) 70%, transparent);
+  color: var(--foreground);
+  text-align: left;
+  box-shadow:
+    0 14px 34px -14px rgb(20 12 4 / 0.6),
+    0 0 0 0 color-mix(in srgb, var(--lm) 45%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  animation:
+    island-prompt-in 320ms var(--ease-out) both,
+    island-prompt-pulse 2.4s 400ms ease-out infinite;
+}
+.island-prompt[hidden] {
+  display: none;
+}
+.island-prompt .island-badge {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 9999px;
+}
+.island-prompt-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.island-prompt-action {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+}
+.island-prompt strong {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.island-prompt kbd {
+  background: var(--lm);
+  color: #fff;
+  border-color: transparent;
+}
+.island-prompt:hover {
+  border-color: var(--lm);
+}
+@keyframes island-prompt-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+}
+@keyframes island-prompt-pulse {
+  70%,
+  100% {
+    box-shadow:
+      0 14px 34px -14px rgb(20 12 4 / 0.6),
+      0 0 0 12px color-mix(in srgb, var(--lm) 0%, transparent);
+  }
+}
+
+/* Station chips. */
+.island-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.9rem 0.4rem 0.45rem;
+  border-radius: 14px;
+  text-align: left;
+  white-space: nowrap;
+  transition:
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+.island-chip:hover {
+  border-color: var(--lm);
+}
+.island-chip:active {
+  transform: translateY(1px);
+}
+.island-chip-text {
+  display: flex;
+  flex-direction: column;
+}
+.island-chip-name {
+  font-family: var(--font-heading);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.island-chip-section {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lm-ink);
+}
+
+/* Floating landmark labels (positioned by ui.ts every frame). */
+.island-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.3rem 0.7rem 0.35rem 0.35rem;
+  border-radius: 11px;
+  border: 1px solid var(--glass-edge);
+  background: color-mix(in srgb, var(--background) 86%, transparent);
+  font-family: var(--font-heading);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+  will-change: transform;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+.island-label-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.island-label small {
+  align-self: stretch;
+  padding-left: 1.65rem;
+  font-family: var(--font-sans);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lm-ink);
+}
+.island-label.is-near {
+  border-color: var(--lm);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lm) 28%, transparent);
+}
+
+/* Frosted glass panels (welcome card, content dialog). */
+.island-glass {
+  background: var(--glass);
+  color: var(--foreground);
+  border: 1px solid var(--glass-edge);
+  box-shadow:
+    0 30px 80px -30px rgb(20 12 4 / 0.65),
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+}
+.island-welcome::backdrop,
+.island-dialog::backdrop {
+  background: rgb(18 14 10 / 0.3);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: island-fade-in 260ms ease both;
+}
+.island-welcome.is-closing::backdrop,
+.island-dialog.is-closing::backdrop {
+  animation: island-fade-out 200ms ease forwards;
+}
+@keyframes island-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes island-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes island-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+@keyframes island-pop-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+/* Welcome card. */
+.island-welcome {
+  margin: auto;
+  width: min(31rem, calc(100vw - 2rem));
+  max-width: none;
+  padding: clamp(1.5rem, 4vw, 2.1rem);
+  border-radius: 24px;
+}
+.island-welcome[open] {
+  animation: island-pop-in 320ms var(--ease-out) backwards;
+}
+.island-welcome.is-closing {
+  animation: island-pop-out 200ms ease-in forwards;
+}
+.island-welcome-eyebrow {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--label-ink);
+}
+.island-welcome-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 4vw, 1.875rem);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+.island-welcome-text {
+  margin: 0.8rem 0 0;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.island-welcome-controls {
+  margin: 1rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+.island-welcome kbd,
+.island-dialog kbd {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 0.35em;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--card);
+  color: var(--foreground);
+  font: 600 0.75rem/1.5 var(--font-sans);
+  text-align: center;
+}
+.island-welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-top: 1.5rem;
+}
+.island-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+.island-btn:active {
+  transform: translateY(1px);
+}
+.island-btn-primary {
+  min-width: 8rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--primary) 80%, transparent);
+}
+.island-btn-primary:hover {
+  background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
+}
+.island-btn-quiet {
+  border: 1px solid var(--glass-edge);
+  background: color-mix(in srgb, var(--background) 50%, transparent);
+}
+.island-btn-quiet:hover {
+  border-color: var(--primary);
+}
+.island-welcome-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--glass-edge);
+}
+.island-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.25rem 0 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.island-switch:hover {
+  color: var(--foreground);
+}
+.island-switch-track {
+  position: relative;
+  width: 2.25rem;
+  height: 1.3rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--foreground) 22%, transparent);
+  transition: background-color 180ms ease;
+}
+.island-switch-thumb {
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  background: var(--background);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: transform 180ms var(--ease-out);
+}
+.island-switch[aria-checked="true"] .island-switch-track {
+  background: var(--primary);
+}
+.island-switch[aria-checked="true"] .island-switch-thumb {
+  transform: translateX(0.95rem);
+}
+
+/* Content dialog: frosted game panel with an accent strip. */
 .island-dialog {
   /* Preflight zeroes margins; restore the centring of a modal dialog. */
   margin: auto;
@@ -943,28 +1290,67 @@ html.view-island,
   max-width: none;
   max-height: min(86vh, 52rem);
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--background);
-  color: var(--foreground);
-  box-shadow: 0 30px 80px -30px rgb(20 12 4 / 0.6);
+  border-radius: 22px;
+  overflow: hidden;
 }
 .island-dialog[open] {
   display: flex;
   flex-direction: column;
-  animation: rise 260ms var(--ease-out) both;
+  animation: island-pop-in 280ms var(--ease-out) backwards;
 }
-.island-dialog::backdrop {
-  background: rgb(18 14 10 / 0.42);
+.island-dialog.is-closing {
+  animation: island-pop-out 200ms ease-in forwards;
 }
-.island-dialog-bar {
+.island-dialog::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--lm), color-mix(in srgb, var(--lm) 30%, transparent));
+  transition: background-color 200ms ease;
+}
+.island-dialog::after {
+  /* A soft wash of the accent behind the header. */
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 7rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--lm) 14%, transparent), transparent);
+  pointer-events: none;
+  z-index: -1;
+}
+.island-dialog-grab {
+  display: none;
+}
+.island-dialog-head {
   display: flex;
-  justify-content: flex-end;
-  padding: 0.75rem 0.75rem 0;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1.1rem clamp(1rem, 3vw, 1.5rem) 0.9rem clamp(1.25rem, 4vw, 2.25rem);
+}
+.island-dialog-where {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.2;
+}
+.island-dialog-place {
+  font-family: var(--font-heading);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+.island-dialog-section {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--lm-ink);
 }
 .island-dialog-close {
   display: grid;
   place-items: center;
+  flex: none;
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 9999px;
@@ -972,16 +1358,196 @@ html.view-island,
   transition: background-color 150ms ease;
 }
 .island-dialog-close:hover {
-  background: var(--muted);
+  background: color-mix(in srgb, var(--foreground) 9%, transparent);
   color: var(--foreground);
 }
 .island-dialog-body {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 clamp(1.25rem, 4vw, 2.25rem) clamp(1.5rem, 4vw, 2.25rem);
+  padding: 0.25rem clamp(1.25rem, 4vw, 2.25rem) clamp(1.25rem, 3vw, 1.75rem);
+  border-top: 1px solid var(--glass-edge);
+  padding-top: 1.25rem;
 }
 .island-dialog-body h2:focus-visible {
   outline-offset: 4px;
+}
+/* The header already names the section, so the panel's own eyebrow is dropped. */
+.island-dialog-body > .eyebrow:first-child {
+  display: none;
+}
+.island-dialog.is-swapping .island-dialog-body,
+.island-dialog.is-swapping .island-dialog-where,
+.island-dialog.is-swapping .island-dialog-head .island-badge {
+  animation: island-swap 260ms var(--ease-out) backwards;
+}
+.island-dialog.from-left {
+  --swap-from: -16px;
+}
+.island-dialog.from-right {
+  --swap-from: 16px;
+}
+@keyframes island-swap {
+  from {
+    opacity: 0;
+    transform: translateX(var(--swap-from, 16px));
+  }
+}
+
+.island-dialog-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem clamp(0.75rem, 2.5vw, 1.25rem) max(0.75rem, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--glass-edge);
+  background: color-mix(in srgb, var(--background) 35%, transparent);
+}
+.island-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-self: start;
+  min-height: 2.5rem;
+  max-width: 100%;
+  padding: 0 0.85rem 0 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid var(--glass-edge);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 150ms ease;
+}
+.island-nav-next {
+  justify-self: end;
+  padding: 0 0.6rem 0 0.85rem;
+}
+.island-nav:hover {
+  border-color: var(--lm);
+}
+.island-nav .island-icon {
+  color: var(--lm-ink);
+}
+.island-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.island-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+.island-dots {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.island-dots li {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  border: 1.5px solid color-mix(in srgb, var(--lm) 75%, transparent);
+  transition:
+    background-color 200ms ease,
+    transform 200ms ease;
+}
+.island-dots li.is-visited {
+  background: var(--lm);
+}
+.island-dots li.is-current {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lm) 30%, transparent);
+}
+.island-progress-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.island-keys {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+}
+.island-keys kbd {
+  font-size: 0.625rem;
+}
+
+/* Tablets: wrap the station chips instead of scrolling them. */
+@media (max-width: 960px) {
+  .island-stations ul {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* Wide screens: the panel sits right of centre and the camera frames the landmark on the left. */
+@media (min-width: 1100px) {
+  .island-dialog {
+    margin: auto 4vw auto auto;
+    width: min(42rem, 48vw);
+  }
+}
+
+/* Phones: a bottom sheet with a drag handle; swipe the header down to close. */
+@media (max-width: 640px) {
+  .island-dialog {
+    width: 100vw;
+    max-height: 86dvh;
+    margin: auto 0 0;
+    border-radius: 22px 22px 0 0;
+    border-bottom: 0;
+    transform: translateY(var(--drag, 0px));
+    transition: transform 220ms var(--ease-out);
+  }
+  .island-dialog.is-dragging {
+    transition: none;
+  }
+  .island-dialog[open] {
+    animation: island-sheet-in 300ms var(--ease-out) backwards;
+  }
+  .island-dialog.is-closing {
+    animation: island-sheet-out 220ms ease-in forwards;
+  }
+  .island-dialog-grab {
+    display: grid;
+    place-items: center;
+    height: 1.25rem;
+    touch-action: none;
+  }
+  .island-dialog-grab span {
+    width: 2.5rem;
+    height: 0.3rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--foreground) 28%, transparent);
+  }
+  .island-dialog-head {
+    padding-top: 0.2rem;
+    touch-action: none;
+  }
+  .island-nav-label {
+    display: none;
+  }
+  .island-nav,
+  .island-nav-next {
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    justify-content: center;
+  }
+}
+@keyframes island-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes island-sheet-out {
+  to {
+    transform: translateY(100%);
+  }
 }
 
 .island-note {
@@ -1086,8 +1652,7 @@ html.view-island,
   }
   .island-chip {
     min-height: 2.75rem;
-    justify-content: center;
-    padding: 0.35rem 0.8rem;
+    padding: 0.35rem 0.7rem 0.35rem 0.4rem;
   }
   .island-chip-section {
     display: none;
@@ -1097,25 +1662,10 @@ html.view-island,
   }
   .island-label {
     font-size: 0.8125rem;
-    padding: 0.2rem 0.55rem 0.25rem;
+    padding: 0.2rem 0.55rem 0.25rem 0.3rem;
   }
   .island-label small {
     display: none;
-  }
-  .island-dialog {
-    width: 100vw;
-    max-height: 85dvh;
-    margin: auto 0 0;
-    border-radius: 20px 20px 0 0;
-    border-bottom: 0;
-  }
-  .island-dialog[open] {
-    animation: island-sheet 280ms var(--ease-out) both;
-  }
-}
-@keyframes island-sheet {
-  from {
-    transform: translateY(100%);
   }
 }
 

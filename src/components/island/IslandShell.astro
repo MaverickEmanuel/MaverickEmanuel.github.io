@@ -1,14 +1,21 @@
 ---
 /**
- * The island view's DOM: canvas, floating labels, HUD (view switch, intro
- * card, theme toggle, hint, prompt, station chips), loader and the content
- * dialog. Hidden unless html.view-island is set (see Base.astro and
- * global.css). The 3D scene itself is created by src/island/ (lazy-loaded).
+ * The island view's DOM: canvas, floating labels, HUD (view switch, title,
+ * sound and theme toggles, hint, prompt, station chips), loader, the welcome
+ * card and the content dialog. Hidden unless html.view-island is set (see
+ * Base.astro and global.css). The 3D scene itself is created by src/island/
+ * (lazy-loaded); src/island/ui.ts wires this markup up.
+ *
+ * Each landmark's accent colour is passed to CSS as --lm (see global.css).
  */
 import ThemeToggle from "@/components/ThemeToggle.astro"
+import Icon from "@/components/island/Icon.astro"
 import IslandPanels from "@/components/island/IslandPanels.astro"
 import { site } from "@/content/site"
 import { landmarks } from "@/island/landmarks"
+
+const firstName = site.name.split(" ")[0]
+const total = landmarks.length
 ---
 
 <div id="island" tabindex="-1" role="region" aria-label="Island view">
@@ -17,8 +24,16 @@ import { landmarks } from "@/island/landmarks"
   <div class="island-labels" aria-hidden="true">
     {
       landmarks.map((lm) => (
-        <div class="island-label" data-label={lm.id}>
-          <span>{lm.label}</span>
+        <div class="island-label" data-label={lm.id} style={`--lm: ${lm.accent}`}>
+          <span class="island-label-name">
+            <span class="island-badge island-badge-sm">
+              <Icon name={lm.icon} size={13} />
+            </span>
+            {lm.label}
+            <span class="island-visited-tick" data-visited-tick={lm.id} hidden>
+              <Icon name="check" size={12} />
+            </span>
+          </span>
           <small>{lm.section}</small>
         </div>
       ))
@@ -48,13 +63,28 @@ import { landmarks } from "@/island/landmarks"
       <button
         type="button"
         class="island-title island-surface"
-        data-open-panel="intro"
+        data-open-welcome
         data-needs-ready
+        aria-haspopup="dialog"
       >
         <span class="island-title-name">{site.name}</span>
         <span class="island-title-line">{site.hero.headline}</span>
       </button>
-      <ThemeToggle class="island-surface island-theme" />
+      <div class="island-top-end">
+        <button
+          type="button"
+          class="island-round island-surface"
+          data-sound-toggle
+          data-needs-ready
+          aria-label="Sound"
+          aria-pressed="true"
+          title="Sound (M)"
+        >
+          <span class="island-sound-on"><Icon name="speakerHigh" size={20} /></span>
+          <span class="island-sound-off"><Icon name="speakerSlash" size={20} /></span>
+        </button>
+        <ThemeToggle class="island-surface island-theme" />
+      </div>
     </div>
 
     <div class="island-bottom" data-needs-ready>
@@ -69,23 +99,44 @@ import { landmarks } from "@/island/landmarks"
       <p class="island-hint island-surface" data-hint>
         <span class="hide-coarse">
           <kbd>WASD</kbd> or arrow keys to walk · <kbd>Space</kbd> to jump · click to move · drag to look around ·
-          scroll to zoom
+          scroll to zoom · <kbd>M</kbd> mute
         </span>
         <span class="show-coarse">Joystick or tap to walk · drag to look around · pinch to zoom</span>
       </p>
       <button type="button" class="island-prompt" data-prompt hidden>
-        <span class="hide-coarse">Press <kbd aria-hidden="true">E</kbd> to open</span>
-        <span class="show-coarse">Tap to open</span>
-        <strong data-prompt-name></strong>
+        <span class="island-badge" data-prompt-badge></span>
+        <span class="island-prompt-text">
+          <span class="island-prompt-action">
+            <span class="hide-coarse">Press <kbd aria-hidden="true">E</kbd> to open</span>
+            <span class="show-coarse">Tap to open</span>
+          </span>
+          <strong data-prompt-name></strong>
+        </span>
       </button>
       <nav class="island-stations" aria-label="Island stations">
         <ul>
           {
             landmarks.map((lm) => (
               <li>
-                <button type="button" class="island-chip island-surface" data-station={lm.id}>
-                  <span class="island-chip-name">{lm.label}</span>
-                  <span class="island-chip-section">{lm.section}</span>
+                <button
+                  type="button"
+                  class="island-chip island-surface"
+                  data-station={lm.id}
+                  style={`--lm: ${lm.accent}`}
+                >
+                  <span class="island-badge">
+                    <Icon name={lm.icon} size={16} />
+                  </span>
+                  <span class="island-chip-text">
+                    <span class="island-chip-name">
+                      {lm.label}
+                      <span class="island-visited-tick" data-visited-tick={lm.id} hidden>
+                        <Icon name="check" size={12} />
+                        <span class="sr-only">(explored)</span>
+                      </span>
+                    </span>
+                    <span class="island-chip-section">{lm.section}</span>
+                  </span>
                 </button>
               </li>
             ))
@@ -101,27 +152,83 @@ import { landmarks } from "@/island/landmarks"
     <span>Loading the island…</span>
   </div>
 
-  <dialog class="island-dialog" data-island-dialog aria-labelledby="island-dialog-title">
-    <div class="island-dialog-bar">
-      <button type="button" class="island-dialog-close" data-close aria-label="Close">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path d="M6 6l12 12M18 6 6 18"></path>
-        </svg>
+  <!-- Welcome card: first visit only (localStorage "island-welcomed"); the title button re-opens it. -->
+  <dialog
+    class="island-welcome island-glass"
+    data-welcome
+    aria-labelledby="island-welcome-title"
+    aria-describedby="island-welcome-text"
+  >
+    <p class="island-welcome-eyebrow">{site.name}</p>
+    <h2 id="island-welcome-title" class="island-welcome-title">Welcome to {firstName}'s island</h2>
+    <p id="island-welcome-text" class="island-welcome-text">
+      I'm a software engineer in Toronto who builds AI systems. Each landmark opens a part of my portfolio. Walk up
+      and take a look.
+    </p>
+    <p class="island-welcome-controls">
+      <span class="hide-coarse">
+        <kbd>WASD</kbd> to walk · <kbd>Space</kbd> to jump · <kbd>E</kbd> to open · <kbd>M</kbd> mute
+      </span>
+      <span class="show-coarse">Joystick or tap to walk · tap a landmark to open it</span>
+    </p>
+    <div class="island-welcome-actions">
+      <button type="button" class="island-btn island-btn-primary" data-welcome-explore autofocus>Explore</button>
+      <button type="button" class="island-btn island-btn-quiet" data-view-switch="classic">View classic portfolio</button>
+    </div>
+    <div class="island-welcome-foot">
+      <button type="button" class="island-switch" role="switch" aria-checked="true" data-sound-switch>
+        <span class="island-sound-on"><Icon name="speakerHigh" size={18} /></span>
+        <span class="island-sound-off"><Icon name="speakerSlash" size={18} /></span>
+        <span>Sound</span>
+        <span class="island-switch-track" aria-hidden="true"><span class="island-switch-thumb"></span></span>
       </button>
     </div>
-    <div class="island-dialog-body" data-dialog-body></div>
   </dialog>
+
+  <dialog class="island-dialog island-glass" data-island-dialog aria-labelledby="island-dialog-title">
+    <div class="island-dialog-grab" data-drag-handle aria-hidden="true"><span></span></div>
+    <header class="island-dialog-head" data-drag-area>
+      <span class="island-badge island-badge-lg" data-dialog-badge></span>
+      <div class="island-dialog-where">
+        <span class="island-dialog-place" data-dialog-place></span>
+        <span class="island-dialog-section" data-dialog-section></span>
+      </div>
+      <button type="button" class="island-dialog-close" data-close aria-label="Close">
+        <Icon name="x" size={20} />
+      </button>
+    </header>
+    <div class="island-dialog-body" data-dialog-body></div>
+    <footer class="island-dialog-foot">
+      <button type="button" class="island-nav" data-browse="-1">
+        <Icon name="caretLeft" size={16} />
+        <span class="island-nav-label" data-browse-label="-1"></span>
+      </button>
+      <div class="island-progress">
+        <ol class="island-dots" aria-hidden="true">
+          {landmarks.map((lm) => <li data-dot={lm.id} style={`--lm: ${lm.accent}`} />)}
+        </ol>
+        <span class="island-progress-text" data-progress>0 / {total} explored</span>
+        <span class="island-keys hide-coarse" aria-hidden="true">
+          <kbd>Esc</kbd> close · <kbd>←</kbd> <kbd>→</kbd> browse
+        </span>
+      </div>
+      <button type="button" class="island-nav island-nav-next" data-browse="1">
+        <span class="island-nav-label" data-browse-label="1"></span>
+        <Icon name="caretRight" size={16} />
+      </button>
+    </footer>
+  </dialog>
+
+  <!-- Icon sources for the dialog badge and the prompt, cloned by ui.ts. -->
+  <template id="island-icons">
+    {
+      landmarks.map((lm) => (
+        <span data-icon-for={lm.id}>
+          <Icon name={lm.icon} size={22} />
+        </span>
+      ))
+    }
+  </template>
 
   <IslandPanels />
 </div>

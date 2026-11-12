@@ -8,10 +8,41 @@ import { landmarks, standPoint } from "./landmarks"
 /** Radius of the grass top. The sand beach runs out to SAND_RADIUS. */
 export const GRASS_RADIUS = 24.5
 export const SAND_RADIUS = 27.5
-/** The player is kept inside this radius. */
-export const WALK_RADIUS = 23
+/** The player is kept inside this radius (on the beach), or on the dock. */
+export const WALK_RADIUS = 26.6
 /** Height of flat grass (and of every landmark's base). */
 export const BASE_Y = 0.6
+/** Height of the sand top. The grass bank slopes down to it. */
+export const SAND_Y = 0.3
+
+/**
+ * The wooden dock: a straight jetty from the south-east beach out to sea.
+ * `angle` is measured like a landmark's facing (0 points south, +z). Distances
+ * are from the island centre along that direction.
+ */
+export const DOCK = {
+  angle: 0.7,
+  start: 25.2,
+  end: 36,
+  halfWidth: 1.1,
+  /** Height of the deck top. The first `ramp` units slope up from the sand. */
+  deckY: 0.62,
+  ramp: 1.2,
+}
+const dockDir = { x: Math.sin(DOCK.angle), z: Math.cos(DOCK.angle) }
+
+/** (x, z) in dock coordinates: `along` from the island centre, `across` to the side. */
+export function dockLocal(x: number, z: number): { along: number; across: number } {
+  return { along: x * dockDir.x + z * dockDir.z, across: x * dockDir.z - z * dockDir.x }
+}
+/** World (x, z) of a point in dock coordinates. */
+export function dockPoint(along: number, across: number): [number, number] {
+  return [dockDir.x * along + dockDir.z * across, dockDir.z * along - dockDir.x * across]
+}
+function onDock(x: number, z: number, inset = 0): boolean {
+  const d = dockLocal(x, z)
+  return d.along >= DOCK.start && d.along <= DOCK.end - inset && Math.abs(d.across) <= DOCK.halfWidth - inset
+}
 /** Player footprint for collisions. */
 export const PLAYER_RADIUS = 0.45
 
@@ -38,6 +69,12 @@ const hills = [
  */
 export function groundHeight(x: number, z: number): number {
   const r = Math.hypot(x, z)
+  if (r > GRASS_RADIUS) {
+    const beach = BASE_Y + (SAND_Y - BASE_Y) * smoothstep(GRASS_RADIUS, GRASS_RADIUS + 0.9, r)
+    if (!onDock(x, z)) return beach
+    const along = dockLocal(x, z).along
+    return Math.max(beach, SAND_Y + (DOCK.deckY - SAND_Y) * smoothstep(DOCK.start, DOCK.start + DOCK.ramp, along))
+  }
   let bumps =
     0.18 * Math.sin(x * 0.33 + 1.3) * Math.cos(z * 0.29 - 0.7) +
     0.1 * Math.sin(x * 0.71 + z * 0.53) +
@@ -86,6 +123,8 @@ function distanceToSegment(
 
 function clearOfLayout(x: number, z: number, margin: number): boolean {
   if (Math.hypot(x, z) < 4 + margin) return false
+  const d = dockLocal(x, z)
+  if (d.along > DOCK.start - 3 && Math.abs(d.across) < DOCK.halfWidth + 2.5 + margin) return false
   for (const lm of landmarks) {
     const d = Math.hypot(x - lm.position[0], z - lm.position[1])
     if (d < lm.collider + 2.5 + margin) return false
@@ -138,11 +177,31 @@ export const trees = scatter(7, 24, 6, GRASS_RADIUS - 1.5, 2.8, 2)
 /** Rocks along the beach and in the grass. */
 export const rocks = scatter(19, 14, 10, GRASS_RADIUS + 1.5, 2.2, 3, trees)
 
+/** Flower patches (butterflies visit them by day, fireflies drift over them at night). */
+export const flowers = scatter(31, 18, 6, GRASS_RADIUS - 2, 1.6, 3, [...trees, ...rocks])
+
+export type Surface = "grass" | "stone" | "sand" | "wood"
+
+/** What the player is standing on, for footstep sounds. */
+export function surfaceAt(x: number, z: number): Surface {
+  const r = Math.hypot(x, z)
+  if (r > GRASS_RADIUS) return onDock(x, z) && dockLocal(x, z).along > DOCK.start + DOCK.ramp * 0.5 ? "wood" : r > GRASS_RADIUS + 0.4 ? "sand" : "grass"
+  if (r < 3.4) return "stone"
+  for (const p of paths) {
+    if (r > 3.6 && distanceToSegment(x, z, p.from, p.to) < 0.6) return "stone"
+  }
+  return "grass"
+}
+
+/** The plaza signpost (see scene.ts). */
+export const SIGNPOST: [number, number] = [-1.3, 2.25]
+
 /** Everything the player cannot walk through. */
 export const colliders: Circle[] = [
+  { x: SIGNPOST[0], z: SIGNPOST[1], r: 0.35 },
   ...landmarks.map((lm) => ({ x: lm.position[0], z: lm.position[1], r: lm.collider })),
   ...trees.map((t) => ({ x: t.x, z: t.z, r: 0.55 * t.scale })),
-  ...rocks.filter((r) => Math.hypot(r.x, r.z) < WALK_RADIUS + 1).map((r) => ({
+  ...rocks.map((r) => ({
     x: r.x,
     z: r.z,
     r: 0.6 * r.scale,
@@ -168,9 +227,20 @@ export function resolvePosition(p: { x: number; z: number }): { x: number; z: nu
       }
     }
     const r = Math.hypot(p.x, p.z)
-    if (r > WALK_RADIUS) {
-      p.x *= WALK_RADIUS / r
-      p.z *= WALK_RADIUS / r
+    if (r > WALK_RADIUS && !onDock(p.x, p.z, PLAYER_RADIUS)) {
+      // Outside both walkable areas: move to the nearer of the beach edge and the dock.
+      const cx = p.x * (WALK_RADIUS / r)
+      const cz = p.z * (WALK_RADIUS / r)
+      const d = dockLocal(p.x, p.z)
+      const edge = DOCK.halfWidth - PLAYER_RADIUS
+      const [dx, dz] = dockPoint(
+        Math.min(DOCK.end - PLAYER_RADIUS, Math.max(DOCK.start, d.along)),
+        Math.max(-edge, Math.min(edge, d.across))
+      )
+      const toCircle = Math.hypot(p.x - cx, p.z - cz)
+      const toDock = Math.hypot(p.x - dx, p.z - dz)
+      p.x = toDock < toCircle ? dx : cx
+      p.z = toDock < toCircle ? dz : cz
     }
   }
   return p
