@@ -19,22 +19,6 @@ import sfxUrl from "@/assets/audio/sfx.mp3?url"
 import { SPRITE, type SpriteName } from "./audio-sprite"
 import type { Surface } from "./world"
 
-/** Groups that can be switched off one by one (the dev sound panel uses this). */
-export const SOUND_GROUPS = [
-  "ocean",
-  "gulls",
-  "campfire",
-  "popup",
-  "arrive",
-  "click",
-  "step-grass",
-  "step-stone",
-  "step-sand",
-  "step-wood",
-  "thud",
-] as const
-export type SoundGroup = (typeof SOUND_GROUPS)[number]
-
 const PREF_KEY = "island-sound"
 /** Loop lengths in seconds (the encoded files may carry a few ms of padding). */
 const OCEAN_LENGTH = 24
@@ -42,8 +26,11 @@ const FIRE_LENGTH = 14
 /** Silence before the first clip in the sprite (scripts/audio/sprite.py). */
 const SPRITE_LEAD = 0.15
 
+/** Overall loudness (master gain when unmuted). */
+const MASTER = 0.75
+
 const LEVELS = {
-  ocean: 0.2,
+  ocean: 0.12,
   fire: 0.6,
   gull: 0.26,
   popupOpen: 0.42,
@@ -51,7 +38,7 @@ const LEVELS = {
   arrive: 0.3,
   click: 0.32,
   step: 0.26,
-  thud: 0.4,
+  thud: 0.2,
 }
 /** Base playback rate per surface (the sand steps are sped up to walking pace). */
 const STEP_RATE: Record<Surface, number> = { grass: 1, stone: 1, sand: 1.12, wood: 1 }
@@ -82,10 +69,8 @@ function firstSound(buffer: AudioBuffer, threshold: number, limit: number): numb
 
 export class IslandAudio {
   muted = readMuted()
-  private enabled = new Set<SoundGroup>(SOUND_GROUPS)
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
-  private oceanGain: GainNode | null = null
   private fireGain: GainNode | null = null
   private sfx: AudioBuffer | null = null
   /** Decoder padding at the start of the sprite, if any. */
@@ -123,6 +108,7 @@ export class IslandAudio {
       if (!Ctor) return
       this.ctx = new Ctor()
       this.master = this.ctx.createGain()
+      this.master.gain.value = MASTER
       this.master.connect(this.ctx.destination)
       void this.load()
     }
@@ -143,7 +129,7 @@ export class IslandAudio {
       const lead = firstSound(sfxBuf, 0.002, 0.5) - SPRITE_LEAD
       this.spriteShift = lead > 0.004 && lead < 0.08 ? lead : 0
     }
-    this.oceanGain = this.startLoop(oceanBuf, OCEAN_LENGTH, this.enabled.has("ocean") ? LEVELS.ocean : 0)
+    this.startLoop(oceanBuf, OCEAN_LENGTH, LEVELS.ocean)
     this.fireGain = this.startLoop(fireBuf, FIRE_LENGTH, 0)
   }
 
@@ -174,7 +160,7 @@ export class IslandAudio {
     if (this.ctx && this.master) {
       const now = this.ctx.currentTime
       this.master.gain.cancelScheduledValues(now)
-      this.master.gain.setTargetAtTime(muted ? 0 : 1, now, 0.06)
+      this.master.gain.setTargetAtTime(muted ? 0 : MASTER, now, 0.06)
       if (muted) window.setTimeout(() => this.muted && this.ctx?.state === "running" && void this.ctx.suspend(), 400)
     }
     this.listeners.forEach((fn) => fn(muted))
@@ -182,19 +168,6 @@ export class IslandAudio {
 
   toggle() {
     this.setMuted(!this.muted)
-  }
-
-  /** Switches one group on or off (dev sound panel). */
-  setGroup(group: SoundGroup, on: boolean) {
-    if (on) this.enabled.add(group)
-    else this.enabled.delete(group)
-    if (group === "ocean" && this.oceanGain && this.ctx) {
-      this.oceanGain.gain.setTargetAtTime(on ? LEVELS.ocean : 0, this.ctx.currentTime, 0.2)
-    }
-  }
-
-  groupOn(group: SoundGroup): boolean {
-    return this.enabled.has(group)
   }
 
   private get live(): boolean {
@@ -238,24 +211,23 @@ export class IslandAudio {
   }
 
   popupOpen() {
-    if (this.enabled.has("popup")) this.play("popup-open", LEVELS.popupOpen)
+    this.play("popup-open", LEVELS.popupOpen)
   }
 
   popupClose() {
-    if (this.enabled.has("popup")) this.play("popup-close", LEVELS.popupClose)
+    this.play("popup-close", LEVELS.popupClose)
   }
 
   arrive() {
-    if (this.enabled.has("arrive")) this.play("arrive", LEVELS.arrive)
+    this.play("arrive", LEVELS.arrive)
   }
 
   click() {
-    if (this.enabled.has("click")) this.play("click", LEVELS.click)
+    this.play("click", LEVELS.click)
   }
 
   /** One footstep on `surface`; `pace` is 0..1 of full walking speed. */
   step(surface: Surface, pace: number) {
-    if (!this.enabled.has(`step-${surface}`)) return
     const name = this.pick(`step-${surface}`)
     if (!name) return
     const rate = STEP_RATE[surface] * (0.94 + Math.random() * 0.12) * (0.92 + 0.12 * pace)
@@ -264,7 +236,7 @@ export class IslandAudio {
 
   /** Jump landing. */
   land() {
-    if (this.enabled.has("thud") && "thud" in SPRITE) this.play("thud" as SpriteName, LEVELS.thud, 0.95 + Math.random() * 0.1)
+    this.play("thud", LEVELS.thud, 0.95 + Math.random() * 0.1)
   }
 
   /**
@@ -274,7 +246,7 @@ export class IslandAudio {
   update(dt: number, fireDistance: number) {
     if (!this.ctx || !this.fireGain) return
     const near = 1 - smoothstep(FIRE_NEAR, FIRE_FAR, fireDistance)
-    const level = this.enabled.has("campfire") ? LEVELS.fire * near * near : 0
+    const level = LEVELS.fire * near * near
     if (Math.abs(level - this.fireLevel) > 0.002) {
       this.fireLevel = level
       this.fireGain.gain.setTargetAtTime(level, this.ctx.currentTime, 0.12)
@@ -282,15 +254,8 @@ export class IslandAudio {
     this.nextGull -= dt
     if (this.nextGull <= 0) {
       this.nextGull = 20 + Math.random() * 20
-      if (this.enabled.has("gulls")) {
-        this.play(Math.random() < 0.5 ? "gull-1" : "gull-3", LEVELS.gull * (0.7 + Math.random() * 0.3), 0.92 + Math.random() * 0.16, Math.random() * 1.2 - 0.6)
-      }
+      this.play(Math.random() < 0.5 ? "gull-1" : "gull-3", LEVELS.gull * (0.7 + Math.random() * 0.3), 0.92 + Math.random() * 0.16, Math.random() * 1.2 - 0.6)
     }
-  }
-
-  /** Dev checks: context state and whether the files decoded. */
-  debugState() {
-    return { context: this.ctx?.state ?? "none", sprite: !!this.sfx, ocean: !!this.oceanGain, fire: !!this.fireGain, muted: this.muted }
   }
 
   /** Pause with the tab; resume when it comes back (if not muted). */

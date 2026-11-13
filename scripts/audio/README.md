@@ -8,7 +8,8 @@ How `src/assets/audio/` was made from the CC0 sources listed in
    `ffmpeg -i "Seagull Ambient 1.wav" -ac 1 -ar 44100 wav/a1.wav`.
    Names `process.py` expects: `ocean_st.wav`, `fire.wav`, `a1.wav`, `a3.wav`,
    `sand.wav`, `bookOpen.wav`, `bookClose.wav`, `glass_002.wav`,
-   `click_002.wav` (plus the Kenney Impact Sounds steps, if present).
+   `click_002.wav` and from Kenney Impact Sounds `footstep_{grass,concrete,wood}_000`–`003.wav`
+   and `impactSoft_heavy_000.wav` (the jump landing).
 2. `python3 process.py wav out`: crossfaded loops (ocean 24 s, fire 14 s),
    trimmed and level-matched one-shots, sand sliced into single steps.
 3. `python3 sprite.py out sfx.wav`: packs the one-shots into one sprite and

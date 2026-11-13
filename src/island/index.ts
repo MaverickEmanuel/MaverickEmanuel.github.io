@@ -359,27 +359,12 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   if (!document.hidden) raf = requestAnimationFrame(frame)
   hud.welcomeIfNew()
 
-  // Dev only (pnpm dev): the temporary sound test panel. Not in production builds.
-  let disposeDev: (() => void) | null = null
   let disposed = false
-  if (import.meta.env.DEV) {
-    // Dev-only probe for automated checks (draw calls, player position, surface).
-    ;(window as unknown as Record<string, unknown>).__island = {
-      calls: () => world.renderer.info.render.calls,
-      triangles: () => world.renderer.info.render.triangles,
-      pos: () => ({ x: pos.x, y: pos.y, z: pos.z, surface: surfaceAt(pos.x, pos.z) }),
-      audio: () => audio.debugState(),
-    }
-    void import("./devSound").then((m) => {
-      if (!disposed) disposeDev = m.mountSoundPanel(root, audio)
-    })
-  }
 
   return {
     dispose() {
       if (disposed) return
       disposed = true
-      disposeDev?.()
       audio.dispose()
       cancelAnimationFrame(raf)
       document.removeEventListener("visibilitychange", onVisibility)

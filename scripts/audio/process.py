@@ -42,3 +42,12 @@ for i, t in enumerate([0.18, 2.02, 3.84, 5.06]):
     write(f"step-sand-{i}.wav", rms_to(fade(s, 0.004, 0.12), -21, -2))
 for n, o in [("bookOpen", "popup-open"), ("bookClose", "popup-close"), ("glass_002", "arrive"), ("click_002", "click")]:
     write(f"{o}.wav", peak_to(fade(trim(read(f"{n}.wav"), -60, 0.002), 0.001, 0.01 if n!="click_002" else 0.002), -3))
+# Kenney Impact Sounds: footsteps (concrete stands in for stone) and the jump landing.
+for surface, kind in [("grass", "grass"), ("stone", "concrete"), ("wood", "wood")]:
+    for i in range(4):
+        name = f"footstep_{kind}_00{i}.wav"
+        if os.path.exists(os.path.join(src, name)):
+            s = trim(read(name), -55, 0.002)[: int(0.4 * SR)]
+            write(f"step-{surface}-{i}.wav", rms_to(fade(s, 0.002, 0.06), -21, -2))
+if os.path.exists(os.path.join(src, "impactSoft_heavy_000.wav")):
+    write("thud.wav", peak_to(fade(trim(read("impactSoft_heavy_000.wav"), -55, 0.002), 0.001, 0.08), -4))

@@ -75,10 +75,12 @@ export class Character {
     const moving = Math.min(1, speed / 5)
     this.swing += (moving - this.swing) * Math.min(1, dt * 10)
     const before = Math.floor(this.phase / Math.PI)
-    this.phase += dt * (4 + speed * 1.6)
+    // About 2.6 footfalls a second at full walking speed (it was ~4.6, which
+    // sounded like running once footsteps had sound).
+    this.phase += dt * (3 + speed * 0.8)
     // A foot lands each half cycle (when the legs pass each other).
     if (Math.floor(this.phase / Math.PI) !== before && this.swing > 0.35 && !airborne) this.steps++
-    const s = Math.sin(this.phase) * 0.7 * this.swing
+    const s = Math.sin(this.phase) * 0.85 * this.swing
     this.legs[0].rotation.x = s
     this.legs[1].rotation.x = -s
     this.arms[0].rotation.x = -s * 0.9

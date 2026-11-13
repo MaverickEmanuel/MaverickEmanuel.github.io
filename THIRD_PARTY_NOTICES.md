@@ -111,3 +111,8 @@ the scripts in `scripts/audio/`; the short sounds are packed into one sprite
 - **Arrival chime and UI click** (sprite `arrive`, `click`): glass_002.ogg and
   click_002.ogg from Kenney's "Interface Sounds" (www.kenney.nl), obtained from
   Kenney's own upload at https://opengameart.org/content/interface-sounds.
+- **Grass, stone and wood footsteps; jump landing** (sprite `step-grass-*`,
+  `step-stone-*`, `step-wood-*`, `thud`): footstep_grass_000–003,
+  footstep_concrete_000–003 (used for stone) and footstep_wood_000–003, and
+  impactSoft_heavy_000 from Kenney's "Impact Sounds" 1.0 (www.kenney.nl),
+  https://kenney.nl/assets/impact-sounds.
