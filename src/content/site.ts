@@ -248,7 +248,7 @@ export const site: SiteContent = {
     items: [
       {
         label: "Training for",
-        text: "Siguniang, the Four Sisters Mountain in Sichuan, in 2027. A 4,700 m climb near Shangri-La in 2026 got me hooked on mountaineering.",
+        text: "Siguniang, the Four Sisters Mountain in China, which I'm hoping to climb in 2027. I got into mountaineering after trekking in the mountains around Shangri-La and Lijiang in 2026, and I've wanted to go higher ever since.",
       },
       {
         label: "Building",
