@@ -248,17 +248,13 @@ export const site: SiteContent = {
     items: [
       {
         label: "Training for",
-        text: "a 5,000 m peak next year, after climbing a 4,700 m mountain in Yunnan, China.",
+        text: "Siguniang, the Four Sisters Mountain in Sichuan, in 2027. A 4,700 m climb near Shangri-La in 2026 got me hooked on mountaineering.",
       },
       {
         label: "Building",
         text: "Shovel Snow Sim and Planet Sweeper on Roblox (both in progress), with a set of Claude Code skills and subagents I wrote to help make them.",
       },
-      { label: "Playing", text: "World of Warcraft." },
-      {
-        label: "Otherwise",
-        text: "travelling, working out, and getting outside for the scenery.",
-      },
+      { label: "Playing", text: "World of Warcraft: Forever." },
     ],
   },
 
