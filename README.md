@@ -1,9 +1,25 @@
-# portfolio-v3
+# Maverick Emanuel: portfolio
 
-Single-page personal portfolio built with Astro, Tailwind CSS v4 and shadcn/ui
-tokens. Static output. The default view is a small 3D island (three.js, loaded
-on demand, see [Island](#island)); the classic page is always in the HTML and
-needs no JavaScript beyond a few tiny inline scripts (theme, entrance motion).
+My personal portfolio: **<https://maverickemanuel.github.io>**
+
+By default it opens as a small low-poly island that you walk around. Each
+landmark opens one part of the portfolio: projects, experience, education,
+what I do off the clock, and contact. There's ambient sound you can turn off,
+and a "Classic view" button switches to a plain single-page version at any
+time. Visitors who prefer reduced motion, or whose browsers can't run WebGL,
+get the classic page automatically.
+
+Built with Astro 7, Tailwind CSS v4 and three.js. The site is static, has no
+backend and loads no third-party scripts.
+
+---
+
+The rest of this README is for working on the site.
+
+Single-page site built with Astro, Tailwind CSS v4 and shadcn/ui tokens.
+Static output. The default view is the 3D island (three.js, loaded on demand,
+see [Island](#island)); the classic page is always in the HTML and needs no
+JavaScript beyond a few tiny inline scripts (theme, entrance motion).
 
 Third-party credits and licences: see `THIRD_PARTY_NOTICES.md`.
 
@@ -90,9 +106,38 @@ share the same content from `src/content/site.ts`.
   and has no three.js.
 - **Lazy loading:** `boot.ts` loads `src/island/index.ts` (and three.js) with a
   dynamic `import()` only when the island is shown, so classic visitors
-  download none of it. The island chunk is about 150 kB gzipped.
+  download none of it. The island chunk is about 165 kB gzipped; its three
+  sound files (about 385 kB) are fetched with it, never by the classic page.
 - **Fallback:** if WebGL cannot start (or the context is lost), the page
   switches to classic and shows a one-line note.
+
+### Controls
+
+WASD or the arrow keys to walk, Space to jump, E to open the landmark you're
+next to, M to mute. Click or tap the ground to walk there, drag to orbit the
+camera, and scroll or pinch to zoom. Touch devices also get an on-screen
+joystick. In a popup, ← and → move to the previous or next landmark and Esc
+closes it. On phones the popup is a bottom sheet you can swipe down to close.
+Space always jumps (outside popups), even when a HUD button has focus. Enter
+presses a focused button.
+
+### First visit, sound and saved state
+
+- **Welcome card:** shown on the first visit only. "Explore" starts the island
+  (and the sound, if its switch is on). "View classic portfolio" switches
+  views. The name button in the top bar opens the card again.
+- **Sound:** an ocean bed, occasional gulls, a campfire that gets louder as you
+  approach, popup open and close, an arrival chime, UI clicks, footsteps per
+  surface (grass, stone, sand, wood dock) and a jump landing. It's on by
+  default for first visits. Returning visitors start silent until they press
+  the speaker button or M, because browsers only allow audio after a gesture
+  and nothing asks them first. The choice made on a page survives switching
+  to the classic view and back. Sources and licences are in
+  `THIRD_PARTY_NOTICES.md`; how the files were made is in
+  `scripts/audio/README.md`.
+- **localStorage keys:** `view`, `theme`, `island-welcomed`, `island-visited`
+  (the explored landmarks, for the "x / 6 explored" progress and the ticks),
+  and `island-sound` (`on` or `off`).
 
 ### Code map
 
@@ -101,24 +146,28 @@ share the same content from `src/content/site.ts`.
 | `src/island/landmarks.ts` | The stations: id, label, section, model, position, facing, footprint. Pure data, shared by the HUD markup and the scene. |
 | `src/island/world.ts` | Ground height, paths, scattered trees and rocks, colliders, walkable radius. No three.js. |
 | `src/island/palette.ts` | Dusk (dark theme) and late-afternoon (light theme) lighting, fog and sky values; shared material colours. |
-| `src/island/scene.ts` | Renderer, camera, lights, sky, water, terrain, scenery; theme swap; dispose. |
-| `src/island/models.ts` | Landmark models built from primitives, plus a cached material/geometry kit. |
+| `src/island/scene.ts` | Renderer, camera, lights, sky, water, terrain, scenery, the dock, arrival ring and landmark animations; theme swap; dispose. |
+| `src/island/ambient.ts` | Ambient life: shoreline foam and swash, whitecaps, campfire smoke and sparks, gulls, butterflies or fireflies, lamp light pools, the rowboat and the sailboat. |
+| `src/island/models.ts` | Landmark, dock and boat models built from primitives, a cached material/geometry kit, and `bakeStatic` (merges static meshes to cut draw calls). |
+| `src/island/audio.ts` | Web Audio: the loops, the sound sprite (`audio-sprite.ts`), mute and its saved state. |
+| `src/island/icons.ts` | Phosphor duotone icons, inlined (rendered by `src/components/island/Icon.astro`). |
 | `src/island/character.ts` | The blocky player and its walk cycle. |
 | `src/island/controls.ts` | Keys, click/tap to walk, drag to orbit, wheel/pinch zoom, with limits. |
-| `src/island/ui.ts` | Station chips, open prompt, floating labels, hint, content dialog. |
+| `src/island/ui.ts` | Station chips, open prompt, floating labels, hint, welcome card, sound toggles, the content dialog (browse, progress, phone bottom sheet). |
 | `src/island/index.ts` | Wires it together: movement, camera follow, render loop, cleanup. |
 | `src/island/boot.ts` | View switching and lazy loading (see above). |
-| `src/components/island/IslandShell.astro` | The island's DOM: canvas, HUD, loader, dialog. |
+| `src/components/island/IslandShell.astro` | The island's DOM: canvas, HUD, loader, welcome card, dialog. |
 | `src/components/island/IslandPanels.astro` | Dialog content per station, rendered from `site.ts`. |
 
 ### Moving or adding a landmark
 
-- **Move one:** change its `position` (`[x, z]`, the island's walkable radius
-  is about 23 units, the player spawns at the origin) in
+- **Move one:** change its `position` (`[x, z]`; the grass top has a radius
+  of 24.5 units and the player spawns at the origin) in
   `src/island/landmarks.ts`. `facing: faceCentre(x, z)` keeps it facing the
   spawn plaza; paths, lamps, the flattened ground and colliders follow
   automatically. Adjust `labelHeight` if the label sits too low or high.
-- **Add one:** add an entry to `landmarks` (its `id` is also the panel id),
+- **Add one:** add an entry to `landmarks` (its `id` is also the panel id;
+  give it an `accent` colour and an `icon` from `src/island/icons.ts`),
   add a `<template id="island-panel-{id}">` to `IslandPanels.astro` that
   renders the content from `site.ts` (give its heading
   `id="island-dialog-title" tabindex="-1"`), and either reuse a `model` or
