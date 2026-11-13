@@ -1378,8 +1378,10 @@ html.view-island,
   border-top: 1px solid var(--glass-edge);
   padding-top: 1.25rem;
 }
-.island-dialog-body h2:focus-visible {
-  outline-offset: 4px;
+/* The heading takes focus when the panel opens (for screen readers); it isn't
+   a control, so no focus ring. */
+.island-dialog-body h2:focus {
+  outline: none;
 }
 /* The header already names the section, so the panel's own eyebrow is dropped. */
 .island-dialog-body > .eyebrow:first-child {

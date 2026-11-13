@@ -92,6 +92,25 @@ export function groundHeight(x: number, z: number): number {
   return BASE_Y + Math.max(0, bumps) * flat
 }
 
+/**
+ * Water surface height at (x, z) at `time` seconds: a few crossing sines plus
+ * a gentle swell that rolls in toward the island. Calmer near the shore, so
+ * the foam line sits on it. Used by the water mesh and the whitecaps.
+ */
+export function waterHeight(x: number, z: number, time: number): number {
+  const r = Math.hypot(x, z)
+  const t = Math.min(1, Math.max(0, (r - 30) / 14))
+  const calm = 0.15 + 0.85 * t * t * (3 - 2 * t)
+  return (
+    (Math.sin(x * 0.16 + time * 0.9) * 0.1 +
+      Math.cos(z * 0.19 + time * 0.7) * 0.08 +
+      Math.sin((x + z) * 0.33 + time * 1.4) * 0.04 +
+      // Swell: phase falls with time at a fixed radius, so crests travel inward.
+      Math.sin(r * 0.34 + time * 1.05) * 0.09) *
+    calm
+  )
+}
+
 /** Small deterministic PRNG (mulberry32), so the island is the same every visit. */
 export function random(seed: number): () => number {
   let a = seed >>> 0
@@ -193,12 +212,8 @@ export function surfaceAt(x: number, z: number): Surface {
   return "grass"
 }
 
-/** The plaza signpost (see scene.ts). */
-export const SIGNPOST: [number, number] = [-1.3, 2.25]
-
 /** Everything the player cannot walk through. */
 export const colliders: Circle[] = [
-  { x: SIGNPOST[0], z: SIGNPOST[1], r: 0.35 },
   ...landmarks.map((lm) => ({ x: lm.position[0], z: lm.position[1], r: lm.collider })),
   ...trees.map((t) => ({ x: t.x, z: t.z, r: 0.55 * t.scale })),
   ...rocks.map((r) => ({

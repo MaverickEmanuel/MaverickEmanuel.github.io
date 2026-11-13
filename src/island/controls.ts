@@ -5,8 +5,8 @@
  *
  * Keys are read from window but ignored while a dialog is open, while focus
  * is in a text field, or with Ctrl/Cmd/Alt held, so Tab, typing and browser
- * shortcuts are never hijacked. Space is also left alone while focus is on a
- * button or link, so it still presses them.
+ * shortcuts are never hijacked. Space always jumps (outside dialogs), even
+ * when a HUD button has focus; Enter still presses a focused button.
  */
 
 export interface Orbit {
@@ -53,13 +53,6 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
 }
 
-/** Elements that Space activates on their own. */
-function isPressTarget(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null
-  if (!el || !el.closest) return false
-  return !!el.closest("button, a[href], summary, [role='button'], [role='link'], [role='checkbox']")
-}
-
 /** Joystick input below this (fraction of full tilt) counts as none. */
 const STICK_DEAD_ZONE = 0.15
 
@@ -79,7 +72,12 @@ export class Controls {
   constructor(private opts: ControlsOptions) {
     const { canvas } = opts
     this.listen(window, "keydown", (e) => this.onKeyDown(e as KeyboardEvent))
-    this.listen(window, "keyup", (e) => this.pressed.delete((e as KeyboardEvent).code))
+    this.listen(window, "keyup", (e) => {
+      const k = e as KeyboardEvent
+      this.pressed.delete(k.code)
+      // Buttons click on Space keyup in some browsers: Space is the jump key here.
+      if (k.code === "Space" && !this.opts.isBlocked() && !isTypingTarget(k.target)) k.preventDefault()
+    })
     this.listen(window, "blur", () => this.pressed.clear())
     this.listen(canvas, "pointerdown", (e) => this.onPointerDown(e as PointerEvent))
     this.listen(canvas, "pointermove", (e) => this.onPointerMove(e as PointerEvent))
@@ -117,7 +115,8 @@ export class Controls {
       e.preventDefault()
     } else if (e.code === "KeyE" && !e.repeat) {
       this.opts.onInteract()
-    } else if (e.code === "Space" && !isPressTarget(e.target)) {
+    } else if (e.code === "Space") {
+      // preventDefault also stops a focused button from being clicked (on keyup).
       e.preventDefault()
       if (!e.repeat) {
         this.firstInput()

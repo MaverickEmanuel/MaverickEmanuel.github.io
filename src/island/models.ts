@@ -504,7 +504,8 @@ export function rowboat(kit: Kit): THREE.Group {
   hull.scale.set(0.75, 0.55, 1.9)
   g.add(hull)
   g.add(box(kit, kit.mat(colours.ivory), [1.5, 0.08, 3.5], [0, 0.39, 0]))
-  g.add(box(kit, kit.mat(colours.woodDark), [1.3, 0.06, 3.1], [0, 0.4, 0]))
+  // Floor sits a little proud of the rim slab: level tops would z-fight (flicker).
+  g.add(box(kit, kit.mat(colours.woodDark), [1.3, 0.06, 3.1], [0, 0.418, 0]))
   g.add(box(kit, kit.mat(colours.wood), [1.3, 0.1, 0.4], [0, 0.48, 0.3]))
   g.add(box(kit, kit.mat(colours.wood), [0.07, 0.05, 2.4], [0.4, 0.58, -0.1], [0, 0.25, 0]))
   g.add(box(kit, kit.mat(colours.wood), [0.07, 0.05, 2.4], [-0.4, 0.58, -0.1], [0, -0.25, 0]))
@@ -530,38 +531,6 @@ export function sailboat(kit: Kit): THREE.Group {
   )
   sail.position.set(0.05, 1.1, 0.2)
   g.add(sail)
-  return g
-}
-
-/**
- * Signpost for the spawn plaza: one arrow board per landmark, in its accent
- * colour, pointing at it. `targets` are [angle, accent] pairs, the angle
- * measured like a facing (0 = +z).
- */
-export function signpost(kit: Kit, targets: Array<[number, string]>): THREE.Group {
-  const g = new THREE.Group()
-  g.add(cyl(kit, kit.mat(colours.woodDark), 6, 0.1, 2.9, [0, 1.45, 0]))
-  g.add(cone(kit, kit.mat(colours.woodDark), 6, 0.14, 0.2, [0, 2.9, 0]))
-  const arrow = kit.geo("arrow", () => {
-    const shape = new THREE.Shape()
-    shape.moveTo(0.1, -0.15)
-    shape.lineTo(1.05, -0.15)
-    shape.lineTo(1.3, 0)
-    shape.lineTo(1.05, 0.15)
-    shape.lineTo(0.1, 0.15)
-    shape.closePath()
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false })
-    geo.translate(0, 0, -0.03)
-    return geo
-  })
-  targets.forEach(([angle, accent], i) => {
-    const holder = new THREE.Group()
-    holder.position.y = 2.6 - i * 0.36
-    // The arrow points along local +x; turn it so it points along `angle`.
-    holder.rotation.y = angle - Math.PI / 2
-    holder.add(place(new THREE.Mesh(arrow, kit.mat(accent)), [0, 0, 0]))
-    g.add(holder)
-  })
   return g
 }
 

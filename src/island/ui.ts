@@ -187,8 +187,15 @@ export class Hud {
       }
     }
     // Returning visitors skip the welcome card, so nothing asks them about
-    // sound: stay silent until they press the speaker button (or M).
-    if (load(WELCOMED_KEY) === "1") opts.audio.holdSilent()
+    // sound: stay silent until they press the speaker button (or M). Coming
+    // back from the classic view keeps whatever they chose on this page.
+    if (opts.audio.chosen) {
+      opts.audio.unlock()
+      // Browsers that need a fresh gesture to start audio: the next click or key.
+      const resume = () => opts.audio.unlock()
+      window.addEventListener("pointerdown", resume, { signal, capture: true, once: true })
+      window.addEventListener("keydown", resume, { signal, capture: true, once: true })
+    } else if (load(WELCOMED_KEY) === "1") opts.audio.holdSilent()
     syncSound(opts.audio.muted)
     const unsubscribe = opts.audio.onChange((muted) => {
       syncSound(muted)

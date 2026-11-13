@@ -1,12 +1,13 @@
 /**
- * Ambient life, all cheap: shoreline foam (one shader ring), campfire smoke
+ * Ambient life, all cheap: shoreline foam on the water and swash on the sand
+ * (one shader ring each), whitecaps on the open water, campfire smoke
  * and sparks, a few gulls, butterflies by day and fireflies at dusk around
  * the flower patches, soft light pools under the lamps at dusk, a rowboat at
  * the dock and a sailboat on the horizon. Everything is instanced; the whole
  * module adds about a dozen draw calls. lowPower trims the particle counts.
  */
 import * as THREE from "three"
-import { dockPoint, DOCK, flowers, groundHeight, random, SAND_Y } from "./world"
+import { dockPoint, DOCK, flowers, groundHeight, random, SAND_RADIUS, SAND_Y, waterHeight } from "./world"
 import { bakeStatic, rowboat, sailboat, type Kit } from "./models"
 import type { Theme } from "./palette"
 import { colours } from "./palette"
@@ -53,6 +54,111 @@ const FOAM_FRAGMENT = /* glsl */ `
   }
 `
 
+/** Where the still water meets the sand slope (scene.ts: sand top y 0.3 at r 27.5, falling 0.6 per unit). */
+const WATERLINE = SAND_RADIUS + SAND_Y / 0.6
+const SAND_SLOPE = 0.6
+/** Sides of the sand cylinder in scene.ts: the swash ring follows its facets. */
+const SAND_SIDES = 44
+
+const SWASH_VERTEX = /* glsl */ `
+  #include <fog_pars_vertex>
+  attribute float radius;
+  varying float vR;
+  varying vec2 vPos;
+  void main() {
+    vR = radius;
+    vPos = position.xz;
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+    #include <fog_vertex>
+  }
+`
+
+const SWASH_FRAGMENT = /* glsl */ `
+  #include <fog_pars_fragment>
+  uniform float time;
+  uniform float strength;
+  uniform float wetness;
+  uniform vec3 foamColor;
+  uniform vec3 wetColor;
+  varying float vR;
+  varying vec2 vPos;
+  void main() {
+    float a = atan(vPos.x, vPos.y);
+    // Each wave rolls up the sand and drains back. Sets reach different
+    // stretches of the shore at different times.
+    float phase = time * 0.13 + 0.35 * sin(a * 3.0 + 1.3) + 0.18 * sin(a * 7.0 - 0.4);
+    float p = fract(phase);
+    float up = 1.0 - pow(1.0 - clamp(p / 0.38, 0.0, 1.0), 2.0);
+    float reach = p < 0.38 ? up : 1.0 - smoothstep(0.38, 1.0, p);
+    float runup = 0.95 + 0.3 * sin(a * 5.0 + floor(phase) * 2.1);
+    float edge = ${WATERLINE.toFixed(3)} - reach * runup;
+    float d = vR - edge;
+    float breakup = 0.6 + 0.4 * sin(a * 41.0 + time * 0.8) * sin(a * 13.0 - time * 0.5);
+    float lip = (1.0 - smoothstep(0.0, 0.13, abs(d - 0.07))) * smoothstep(0.03, 0.2, reach);
+    float sheet = step(0.0, d) * (1.0 - smoothstep(0.0, 0.7, d)) * 0.35 * (1.0 - smoothstep(0.25, 0.6, p));
+    float foam = clamp((lip * 0.85 + sheet) * breakup, 0.0, 1.0) * strength;
+    // Wet sand up to the wave's highest reach, drying while it drains, plus a
+    // band that stays damp next to the water.
+    float top = p < 0.38 ? edge : ${WATERLINE.toFixed(3)} - runup;
+    float wet = smoothstep(top - 0.05, top + 0.18, vR) * 0.34 * (1.0 - smoothstep(0.38, 1.0, p));
+    wet = max(wet, smoothstep(${(WATERLINE - 0.35).toFixed(3)}, ${WATERLINE.toFixed(3)}, vR) * 0.14) * wetness;
+    float alpha = foam + wet * (1.0 - foam);
+    if (alpha < 0.01) discard;
+    gl_FragColor = vec4(mix(wetColor, foamColor, foam / alpha), alpha);
+    #include <colorspace_fragment>
+    #include <fog_fragment>
+  }
+`
+
+/**
+ * A strip lying on the beach slope around the island, from the sand top down
+ * past the waterline. It follows the sand cylinder's flat facets exactly (a
+ * true circle would float over them or sink in). `radius` is each vertex's
+ * nominal distance from the centre, for the shader.
+ */
+function swashGeometry(): THREE.BufferGeometry {
+  const sub = 3
+  const levels = [26.4, 26.8, 27.15, SAND_RADIUS, 27.75, WATERLINE, 28.4]
+  const heightAt = (r: number) => (r <= SAND_RADIUS ? SAND_Y : SAND_Y - (r - SAND_RADIUS) * SAND_SLOPE) + 0.02
+  const positions: number[] = []
+  const radii: number[] = []
+  const index: number[] = []
+  const columns = SAND_SIDES * sub
+  for (let c = 0; c <= columns; c++) {
+    const facet = Math.floor(c / sub)
+    const t = (c % sub) / sub
+    const t0 = (facet / SAND_SIDES) * Math.PI * 2
+    const t1 = ((facet + 1) / SAND_SIDES) * Math.PI * 2
+    const sx = Math.sin(t0) * (1 - t) + Math.sin(t1) * t
+    const cz = Math.cos(t0) * (1 - t) + Math.cos(t1) * t
+    for (const r of levels) {
+      positions.push(r * sx, heightAt(r), r * cz)
+      radii.push(r)
+    }
+  }
+  const n = levels.length
+  for (let c = 0; c < columns; c++) {
+    for (let l = 0; l < n - 1; l++) {
+      const a = c * n + l
+      const b = (c + 1) * n + l
+      // Counter-clockwise seen from above, so the faces point up.
+      index.push(a, a + 1, b, b, a + 1, b + 1)
+    }
+  }
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3))
+  geo.setAttribute("radius", new THREE.Float32BufferAttribute(radii, 1))
+  geo.setIndex(index)
+  return geo
+}
+
+/** Cheap repeatable hash in [0, 1). */
+function hash(n: number): number {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453
+  return x - Math.floor(x)
+}
+
 function poolTexture(): THREE.CanvasTexture {
   const c = document.createElement("canvas")
   c.width = c.height = 64
@@ -78,6 +184,10 @@ const gullBody = new THREE.Matrix4().makeTranslation(0, -0.02, -0.05)
 export class Ambient {
   readonly group = new THREE.Group()
   private foamUniforms: { time: { value: number }; strength: { value: number }; color: { value: THREE.Color } }
+  private swashUniforms: Record<"time" | "strength" | "wetness", { value: number }> &
+    Record<"foamColor" | "wetColor", { value: THREE.Color }>
+  private caps: THREE.InstancedMesh
+  private capMat: THREE.MeshBasicMaterial
   private smoke: THREE.InstancedMesh
   private sparks: THREE.InstancedMesh
   private wings: THREE.InstancedMesh
@@ -120,6 +230,38 @@ export class Ambient {
     foam.position.y = 0.05
     foam.renderOrder = 1
     this.group.add(foam)
+
+    // Swash: waves running up the beach slope and draining back, wetting the sand.
+    const swashMat = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.UniformsLib.fog,
+        {
+          time: { value: 0 },
+          strength: { value: 1 },
+          wetness: { value: 1 },
+          foamColor: { value: new THREE.Color("#fffaf0") },
+          wetColor: { value: new THREE.Color("#5c3d22") },
+        },
+      ]),
+      vertexShader: SWASH_VERTEX,
+      fragmentShader: SWASH_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+      fog: true,
+    })
+    this.swashUniforms = swashMat.uniforms as typeof this.swashUniforms
+    const swash = new THREE.Mesh(swashGeometry(), swashMat)
+    swash.renderOrder = 1
+    this.group.add(swash)
+
+    // Whitecaps: small flat flecks that form, drift in with the swell and fade.
+    this.capMat = new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.75, depthWrite: false })
+    this.caps = new THREE.InstancedMesh(new THREE.CircleGeometry(0.5, 6).rotateX(-Math.PI / 2), this.capMat, low ? 18 : 36)
+    this.caps.frustumCulled = false
+    this.group.add(this.caps)
 
     // Campfire smoke (soft grey puffs) and sparks (tiny embers).
     const smokeCount = low ? 5 : 8
@@ -241,6 +383,12 @@ export class Ambient {
     this.fireflies.visible = dusk
     this.foamUniforms.strength.value = dusk ? 0.7 : 0.95
     this.foamUniforms.color.value.set(dusk ? "#f3dcc8" : "#fffaf0")
+    this.swashUniforms.strength.value = dusk ? 0.65 : 0.9
+    this.swashUniforms.wetness.value = dusk ? 0.8 : 1
+    this.swashUniforms.foamColor.value.set(dusk ? "#f3dcc8" : "#fffaf0")
+    this.swashUniforms.wetColor.value.set(dusk ? "#1d1820" : "#5c3d22")
+    this.capMat.color.set(dusk ? "#9a93a6" : "#ffffff")
+    this.capMat.opacity = dusk ? 0.45 : 0.7
   }
 
   /** 0..1: the player is at the campfire (more sparks). */
@@ -250,6 +398,30 @@ export class Ambient {
 
   update(time: number) {
     this.foamUniforms.time.value = time
+    this.swashUniforms.time.value = time
+
+    // Whitecaps: each lives a few seconds at a random spot on the open water,
+    // drifting inward with the swell; size rises and falls over its life.
+    for (let i = 0; i < this.caps.count; i++) {
+      const period = 5 + (i % 5) * 0.8
+      const cycle = (time + i * 1.37) / period
+      const k = Math.floor(cycle)
+      const life = cycle - k
+      const angle = hash(i * 7.1 + k * 13.7) * Math.PI * 2
+      let radius = 33 + hash(i * 3.3 + k * 5.9) * 36 - life * 1.4
+      // Keep clear of the dock.
+      if (radius < 39 && Math.abs(Math.atan2(Math.sin(angle - DOCK.angle), Math.cos(angle - DOCK.angle))) < 0.2) radius += 7
+      const x = Math.sin(angle) * radius
+      const z = Math.cos(angle) * radius
+      const size = Math.pow(Math.sin(life * Math.PI), 1.5) * (0.7 + hash(i + k * 2.3) * 0.7)
+      m4.compose(
+        v.set(x, waterHeight(x, z, time) + 0.05, z),
+        q.setFromEuler(e.set(0, angle + Math.PI / 2, 0)),
+        s.set(Math.max(0.001, size * 1.5), 1, Math.max(0.001, size * 0.16))
+      )
+      this.caps.setMatrixAt(i, m4)
+    }
+    this.caps.instanceMatrix.needsUpdate = true
     const [fx, fy, fz] = this.opts.fire
 
     // Smoke: each puff rises over 4 s, growing, then shrinks away.

@@ -6,7 +6,7 @@
 import * as THREE from "three"
 import { Ambient } from "./ambient"
 import { landmarks, standPoint } from "./landmarks"
-import { bakeStatic, buildModel, dock, Kit, lampPost, signpost } from "./models"
+import { bakeStatic, buildModel, dock, Kit, lampPost } from "./models"
 import { colours, palettes, type Theme } from "./palette"
 import {
   BASE_Y,
@@ -14,9 +14,9 @@ import {
   GRASS_RADIUS,
   SAND_RADIUS,
   SAND_Y,
-  SIGNPOST,
   dockPoint,
   groundHeight,
+  waterHeight,
   paths,
   random,
   rocks,
@@ -126,13 +126,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
   scene.add(water)
   const waterPos = waterGeo.attributes.position as THREE.BufferAttribute
   const waterBase = Float32Array.from(waterPos.array as Float32Array)
-  // Calmer water near the shore, so the foam line sits on it.
-  const waterCalm = new Float32Array(waterPos.count)
-  for (let i = 0; i < waterPos.count; i++) {
-    const r = Math.hypot(waterBase[i * 3], waterBase[i * 3 + 2])
-    const t = Math.min(1, Math.max(0, (r - 30) / 14))
-    waterCalm[i] = 0.15 + 0.85 * t * t * (3 - 2 * t)
-  }
 
   // Sand beach under the grass.
   const sand = new THREE.Mesh(
@@ -188,15 +181,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
 
   bakeStatic(lamps)
   scene.add(lamps)
-
-  // Signpost on the plaza: an arrow per landmark, in its accent colour.
-  const post = signpost(
-    kit,
-    landmarks.map((lm) => [Math.atan2(lm.position[0] - SIGNPOST[0], lm.position[1] - SIGNPOST[1]), lm.accent] as [number, string])
-  )
-  post.position.set(SIGNPOST[0], BASE_Y + 0.1, SIGNPOST[1])
-  bakeStatic(post)
-  scene.add(post)
 
   // The dock, off the south-east beach.
   const jetty = dock(kit, DOCK.end - DOCK.start, DOCK.halfWidth, DOCK.deckY, DOCK.ramp)
@@ -301,15 +285,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: { lowPower: boolean
 
   function update(dt: number, time: number) {
     const arr = waterPos.array as Float32Array
-    for (let i = 0; i < arr.length; i += 3) {
-      const x = waterBase[i]
-      const z = waterBase[i + 2]
-      arr[i + 1] =
-        (Math.sin(x * 0.16 + time * 0.9) * 0.11 +
-          Math.cos(z * 0.19 + time * 0.7) * 0.09 +
-          Math.sin((x + z) * 0.33 + time * 1.4) * 0.04) *
-        waterCalm[i / 3]
-    }
+    for (let i = 0; i < arr.length; i += 3) arr[i + 1] = waterHeight(waterBase[i], waterBase[i + 2], time)
     waterPos.needsUpdate = true
 
     // Arrival: ease each landmark's animation toward "here" or "away".

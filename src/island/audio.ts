@@ -47,6 +47,13 @@ const STEP_RATE: Record<Surface, number> = { grass: 1, stone: 1, sand: 1.12, woo
 const FIRE_NEAR = 3
 const FIRE_FAR = 14
 
+/**
+ * The visitor's sound choice during this page load (true = muted), or null if
+ * they haven't made one. Module state, so it outlives a switch to the classic
+ * view and back (each island start makes a new IslandAudio).
+ */
+let pageChoice: boolean | null = null
+
 function readMuted(): boolean {
   try {
     return localStorage.getItem(PREF_KEY) === "off"
@@ -69,7 +76,7 @@ function firstSound(buffer: AudioBuffer, threshold: number, limit: number): numb
 }
 
 export class IslandAudio {
-  muted = readMuted()
+  muted = pageChoice ?? readMuted()
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
   private fireGain: GainNode | null = null
@@ -104,6 +111,7 @@ export class IslandAudio {
    */
   unlock() {
     if (this.disposed || this.muted) return
+    pageChoice = false
     if (!this.ctx) {
       const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
       if (!Ctor) return
@@ -152,6 +160,7 @@ export class IslandAudio {
 
   setMuted(muted: boolean) {
     this.muted = muted
+    pageChoice = muted
     try {
       localStorage.setItem(PREF_KEY, muted ? "off" : "on")
     } catch {
@@ -165,6 +174,11 @@ export class IslandAudio {
       if (muted) window.setTimeout(() => this.muted && this.ctx?.state === "running" && void this.ctx.suspend(), 400)
     }
     this.listeners.forEach((fn) => fn(muted))
+  }
+
+  /** True once the visitor has turned sound on or off (or pressed Explore) on this page. */
+  get chosen(): boolean {
+    return pageChoice !== null
   }
 
   /** Silent for this page view only (not saved): the visitor turns sound on themselves. */
