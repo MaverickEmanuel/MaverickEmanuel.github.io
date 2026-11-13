@@ -44,19 +44,19 @@ references (the unused React runtime) and prints what it removed.
 
 ## Deploy (GitHub Pages)
 
-The site is served at the root of <https://maverickemanuel.github.io>
-(`site` is set in `astro.config.mjs`, no `base`).
+Live at <https://maverickemanuel.github.io>, served from the root of the
+domain (`site` is set in `astro.config.mjs`, no `base`). Missing paths show
+`src/pages/404.astro`.
 
 - `.github/workflows/deploy.yml` builds with `withastro/action` and publishes
   with `actions/deploy-pages`. **Pushing to `main` deploys**; the workflow can
   also be run by hand (`workflow_dispatch`).
-- One-time setup in the GitHub repo: Settings > Pages > Build and deployment >
-  Source: **GitHub Actions**.
-- On a free GitHub plan, Pages only works for a **public** repository.
-- A user site must live in a repo named exactly `MaverickEmanuel.github.io`.
-  The plan is to rename the repo (currently `portfolio`) to that, then update
-  the local remote (`git remote set-url origin ...`). GitHub redirects the old
-  name, but the Pages URL only becomes the root address after the rename.
+- Repo settings (already done): Settings > Pages > Build and deployment >
+  Source: **GitHub Actions**, and the repository is **public** (a free GitHub
+  plan only serves Pages from public repos).
+- A user site must live in a repo named exactly `MaverickEmanuel.github.io`,
+  which is why this repo has that name (it was `portfolio` until launch;
+  GitHub redirects the old name).
 
 ## Theme
 
