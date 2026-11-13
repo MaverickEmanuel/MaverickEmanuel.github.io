@@ -73,10 +73,6 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
       if (lm) teleportTo(lm)
       hud.open(id)
     },
-    onBrowse: (id) => {
-      const lm = landmarks.find((l) => l.id === id)
-      if (lm) teleportTo(lm)
-    },
     onFocus: (id) => {
       focus = id ? (landmarks.find((l) => l.id === id) ?? null) : null
     },

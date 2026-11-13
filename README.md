@@ -116,8 +116,8 @@ share the same content from `src/content/site.ts`.
 WASD or the arrow keys to walk, Space to jump, E to open the landmark you're
 next to, M to mute. Click or tap the ground to walk there, drag to orbit the
 camera, and scroll or pinch to zoom. Touch devices also get an on-screen
-joystick. In a popup, ← and → move to the previous or next landmark and Esc
-closes it. On phones the popup is a bottom sheet you can swipe down to close.
+joystick. In a popup, ← and → (or the buttons at the bottom) show the
+previous or next landmark without moving the player, and Esc closes it. On phones the popup is a bottom sheet you can swipe down to close.
 Space always jumps (outside popups), even when a HUD button has focus. Enter
 presses a focused button.
 

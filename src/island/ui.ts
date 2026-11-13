@@ -20,8 +20,6 @@ interface HudOptions {
   reducedMotion: boolean
   /** A station chip was chosen: move the player there (the panel opens too). */
   onStation: (id: string) => void
-  /** Prev / Next moved the dialog to this landmark: move the player and camera there. */
-  onBrowse: (id: string) => void
   /** The dialog opened on a landmark (camera frames it), or closed (null). */
   onFocus: (id: string | null) => void
 }
@@ -346,7 +344,12 @@ export class Hud {
     void this.dialog.offsetWidth
     this.dialog.classList.add("is-swapping", dir < 0 ? "from-left" : "from-right")
     this.live.textContent = `${lm.label}, ${lm.section}`
-    this.opts.onBrowse(lm.id)
+    // If focus was in the old content (it is after opening), it went with it:
+    // move it to the new heading so ← → and Tab keep working.
+    if (!this.dialog.contains(document.activeElement)) {
+      this.body.querySelector<HTMLElement>("#island-dialog-title")?.focus({ preventScroll: true })
+    }
+    // Browsing only moves the camera's framing; the player stays where they are.
     this.opts.onFocus(lm.id)
   }
 
