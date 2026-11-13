@@ -7,7 +7,7 @@
  * module adds about a dozen draw calls. lowPower trims the particle counts.
  */
 import * as THREE from "three"
-import { dockPoint, DOCK, flowers, groundHeight, random, SAND_RADIUS, SAND_Y, waterHeight } from "./world"
+import { dockPoint, DOCK, flowers, groundHeight, random, SAND_RADIUS, SAND_Y, SWELL, waterHeight } from "./world"
 import { bakeStatic, rowboat, sailboat, type Kit } from "./models"
 import type { Theme } from "./palette"
 import { colours } from "./palette"
@@ -400,24 +400,32 @@ export class Ambient {
     this.foamUniforms.time.value = time
     this.swashUniforms.time.value = time
 
-    // Whitecaps: each lives a few seconds at a random spot on the open water,
-    // drifting inward with the swell; size rises and falls over its life.
+    // Whitecaps ride the swell crests (rings around the island, see
+    // waterHeight) as they roll in, lying along the crest, i.e. parallel to
+    // the nearest shore. Each lives a few seconds, growing then fading.
+    const wavelength = (Math.PI * 2) / SWELL.k
+    const crestSpeed = SWELL.speed / SWELL.k
     for (let i = 0; i < this.caps.count; i++) {
-      const period = 5 + (i % 5) * 0.8
+      // Short lives: a crest travels about 3 units a second, so a cap moves at most ~11.
+      const period = 2.6 + (i % 5) * 0.25
       const cycle = (time + i * 1.37) / period
       const k = Math.floor(cycle)
       const life = cycle - k
+      const born = (k - (i * 1.37) / period) * period
       const angle = hash(i * 7.1 + k * 13.7) * Math.PI * 2
-      let radius = 33 + hash(i * 3.3 + k * 5.9) * 36 - life * 1.4
-      // Keep clear of the dock.
-      if (radius < 39 && Math.abs(Math.atan2(Math.sin(angle - DOCK.angle), Math.cos(angle - DOCK.angle))) < 0.2) radius += 7
+      // Crest radii at birth: sin(r k + t w) = 1  =>  r = (pi/2 + 2 pi n - t w) / k.
+      const first = (Math.PI / 2 - born * SWELL.speed) / SWELL.k
+      const n = Math.ceil((45 - first) / wavelength) + (hash(i * 3.3 + k * 5.9) < 0.5 ? 0 : 1)
+      const radius = first + n * wavelength - crestSpeed * life * period
+      const nearDock = radius < 40 && Math.abs(Math.atan2(Math.sin(angle - DOCK.angle), Math.cos(angle - DOCK.angle))) < 0.25
       const x = Math.sin(angle) * radius
       const z = Math.cos(angle) * radius
-      const size = Math.pow(Math.sin(life * Math.PI), 1.5) * (0.7 + hash(i + k * 2.3) * 0.7)
+      const size = nearDock ? 0 : Math.pow(Math.sin(life * Math.PI), 1.5) * (0.7 + hash(i + k * 2.3) * 0.6)
       m4.compose(
-        v.set(x, waterHeight(x, z, time) + 0.05, z),
-        q.setFromEuler(e.set(0, angle + Math.PI / 2, 0)),
-        s.set(Math.max(0.001, size * 1.5), 1, Math.max(0.001, size * 0.16))
+        v.set(x, waterHeight(x, z, time) + 0.06, z),
+        // Yaw = angle turns the streak's long (x) axis tangent to the circle.
+        q.setFromEuler(e.set(0, angle, 0)),
+        s.set(Math.max(0.001, size * 2.2), 1, Math.max(0.001, size * 0.14))
       )
       this.caps.setMatrixAt(i, m4)
     }

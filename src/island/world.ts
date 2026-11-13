@@ -97,6 +97,9 @@ export function groundHeight(x: number, z: number): number {
  * a gentle swell that rolls in toward the island. Calmer near the shore, so
  * the foam line sits on it. Used by the water mesh and the whitecaps.
  */
+/** The swell: wavenumber (radians per unit of radius) and angular speed. Crests move inward at speed / k. */
+export const SWELL = { k: 0.34, speed: 1.05 }
+
 export function waterHeight(x: number, z: number, time: number): number {
   const r = Math.hypot(x, z)
   const t = Math.min(1, Math.max(0, (r - 30) / 14))
@@ -106,7 +109,7 @@ export function waterHeight(x: number, z: number, time: number): number {
       Math.cos(z * 0.19 + time * 0.7) * 0.08 +
       Math.sin((x + z) * 0.33 + time * 1.4) * 0.04 +
       // Swell: phase falls with time at a fixed radius, so crests travel inward.
-      Math.sin(r * 0.34 + time * 1.05) * 0.09) *
+      Math.sin(r * SWELL.k + time * SWELL.speed) * 0.09) *
     calm
   )
 }
