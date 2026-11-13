@@ -63,7 +63,6 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
 
   /** The landmark the open dialog shows (the camera frames it), and the eased blend 0..1. */
   let focus: Landmark | null = null
-  let focusBlend = 0
 
   const hud = new Hud(root, {
     audio,
@@ -74,7 +73,9 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
       hud.open(id)
     },
     onFocus: (id) => {
-      focus = id ? (landmarks.find((l) => l.id === id) ?? null) : null
+      const next = id ? (landmarks.find((l) => l.id === id) ?? null) : null
+      if (next !== focus) startGlide()
+      focus = next
     },
   })
 
@@ -142,12 +143,15 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   // Follow camera: eases toward the player and the orbit settings.
   const camTarget = new THREE.Vector3()
   const offset = new THREE.Vector3()
-  function desiredCamera(out: THREE.Vector3) {
+  /** The follow camera's offset from its target, from the orbit settings. */
+  function followOffset(out: THREE.Vector3) {
     const { azimuth, polar } = controls.orbit
     // Portrait screens see less of the island across, so pull back a little.
     const distance = controls.orbit.distance * (camera.aspect < 1 ? Math.pow(camera.aspect, -0.4) : 1)
-    offset.set(Math.sin(azimuth) * Math.sin(polar), Math.cos(polar), Math.cos(azimuth) * Math.sin(polar))
-    return out.copy(camTarget).addScaledVector(offset, distance)
+    return out.set(Math.sin(azimuth) * Math.sin(polar), Math.cos(polar), Math.cos(azimuth) * Math.sin(polar)).multiplyScalar(distance)
+  }
+  function desiredCamera(out: THREE.Vector3) {
+    return out.copy(camTarget).add(followOffset(offset))
   }
   function snapCamera() {
     camTarget.set(pos.x, pos.y + 1.6, pos.z)
@@ -159,7 +163,33 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   const focusTarget = new THREE.Vector3()
   const focusOffset = new THREE.Vector3()
   const goal = new THREE.Vector3()
-  const orbitOffset = new THREE.Vector3()
+  const goalOffset = new THREE.Vector3()
+
+  /**
+   * Opening, browsing and closing a popup move the camera with a timed glide
+   * (eased in and out) from wherever it is, instead of the follow chase, which
+   * starts fast and felt like a snap. A new glide mid-way starts from the
+   * current pose. The offset is blended in spherical coordinates (shortest way
+   * round), so the camera swings around the target rather than through it.
+   */
+  const GLIDE_SECONDS = 1.1
+  const glideFromTarget = new THREE.Vector3()
+  const glideFrom = new THREE.Spherical()
+  const glideTo = new THREE.Spherical()
+  const glideOffset = new THREE.Vector3()
+  let glide = -1
+  function startGlide() {
+    if (opts.reducedMotion) return
+    glideFromTarget.copy(camTarget)
+    glideFrom.setFromVector3(glideOffset.subVectors(camera.position, camTarget))
+    glide = 0
+  }
+  /** Spherical with theta = azimuth around y, phi = from straight up (matches the orbit). */
+  function blendSpherical(a: THREE.Spherical, b: THREE.Spherical, t: number, out: THREE.Vector3) {
+    let dTheta = b.theta - a.theta
+    dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta))
+    return out.setFromSphericalCoords(a.radius + (b.radius - a.radius) * t, a.phi + (b.phi - a.phi) * t, a.theta + dTheta * t)
+  }
   function framing(lm: Landmark) {
     focusTarget.set(lm.position[0], BASE_Y + Math.min(3.2, lm.labelHeight * 0.38), lm.position[1])
     const distance = (lm.collider * 2.6 + 12) * (camera.aspect < 1 ? Math.pow(camera.aspect, -0.35) : 1)
@@ -265,21 +295,31 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     const fire = landmarks.find((l) => l.model === "campfire")!
     audio.update(dt, Math.hypot(pos.x - fire.position[0], pos.z - fire.position[1]))
 
-    // Camera: follow the player, or ease in to frame the landmark whose dialog is open.
-    const focusGoal = focus ? 1 : 0
-    focusBlend = opts.reducedMotion ? focusGoal : focusBlend + (focusGoal - focusBlend) * Math.min(1, dt * 3)
-    if (Math.abs(focusGoal - focusBlend) < 0.001) focusBlend = focusGoal
-    const b = focusBlend * focusBlend * (3 - 2 * focusBlend)
-    if (focus) framing(focus)
-    const follow = opts.reducedMotion ? 1 : 1 - Math.exp(-dt * 5)
-    goal.set(pos.x, pos.y + 1.6, pos.z)
-    if (b > 0) goal.lerp(focusTarget, b)
-    camTarget.lerp(goal, follow)
-    desiredCamera(desired)
-    orbitOffset.subVectors(desired, camTarget)
-    if (b > 0) orbitOffset.lerp(focusOffset, b)
-    desired.copy(camTarget).add(orbitOffset)
-    camera.position.lerp(desired, opts.reducedMotion ? 1 : 1 - Math.exp(-dt * 8))
+    // Camera: frame the landmark whose dialog is open, or follow the player;
+    // changes between the two (and between landmarks) glide.
+    if (focus) {
+      framing(focus)
+      goal.copy(focusTarget)
+      goalOffset.copy(focusOffset)
+    } else {
+      goal.set(pos.x, pos.y + 1.6, pos.z)
+      followOffset(goalOffset)
+    }
+    if (glide >= 0) {
+      glide = Math.min(1, glide + dt / GLIDE_SECONDS)
+      const t = glide < 0.5 ? 4 * glide * glide * glide : 1 - Math.pow(-2 * glide + 2, 3) / 2
+      camTarget.lerpVectors(glideFromTarget, goal, t)
+      glideTo.setFromVector3(goalOffset)
+      camera.position.copy(camTarget).add(blendSpherical(glideFrom, glideTo, t, glideOffset))
+      if (glide >= 1) glide = -1
+    } else if (focus) {
+      camTarget.copy(goal)
+      camera.position.copy(goal).add(goalOffset)
+    } else {
+      camTarget.lerp(goal, opts.reducedMotion ? 1 : 1 - Math.exp(-dt * 5))
+      desiredCamera(desired)
+      camera.position.lerp(desired, opts.reducedMotion ? 1 : 1 - Math.exp(-dt * 8))
+    }
     camera.lookAt(camTarget)
     camera.updateMatrixWorld()
 
