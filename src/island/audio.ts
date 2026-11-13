@@ -6,12 +6,13 @@
  * scripts/audio/.
  *
  * Browsers only allow audio after a user gesture, so the AudioContext is
- * created in unlock(), which the welcome card's Explore button (or, for
- * returning visitors, their first click or key press) calls. The files are
- * fetched up front and decoded once the context exists.
+ * created in unlock(), which the welcome card's Explore button and the sound
+ * toggles call. The files are fetched up front and decoded once the context
+ * exists.
  *
- * Sound is on by default; the choice is stored in localStorage
- * ("island-sound": "on" | "off").
+ * Sound is on by default for first visits; the choice is stored in
+ * localStorage ("island-sound": "on" | "off"). Returning visitors start
+ * silent (holdSilent) and turn sound on with the speaker button or M.
  */
 import fireUrl from "@/assets/audio/fire.mp3?url"
 import oceanUrl from "@/assets/audio/ocean.mp3?url"
@@ -164,6 +165,11 @@ export class IslandAudio {
       if (muted) window.setTimeout(() => this.muted && this.ctx?.state === "running" && void this.ctx.suspend(), 400)
     }
     this.listeners.forEach((fn) => fn(muted))
+  }
+
+  /** Silent for this page view only (not saved): the visitor turns sound on themselves. */
+  holdSilent() {
+    this.muted = true
   }
 
   toggle() {

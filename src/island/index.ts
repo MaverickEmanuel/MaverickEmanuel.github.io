@@ -173,9 +173,6 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     const az = lm.facing + 0.35
     focusOffset.set(Math.sin(az) * Math.sin(polar), Math.cos(polar), Math.cos(az) * Math.sin(polar)).multiplyScalar(distance)
   }
-  /** Wide screens: the dialog sits right of centre, so the framed landmark is shifted left. */
-  const wide = matchMedia("(min-width: 1100px)")
-  let viewShift = 0
 
   const forward = new THREE.Vector2()
   const right = new THREE.Vector2()
@@ -288,14 +285,6 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
     desired.copy(camTarget).add(orbitOffset)
     camera.position.lerp(desired, opts.reducedMotion ? 1 : 1 - Math.exp(-dt * 8))
     camera.lookAt(camTarget)
-    const shift = wide.matches ? b * 0.2 : 0
-    if (Math.abs(shift - viewShift) > 0.0005 || (shift === 0 && viewShift !== 0)) {
-      viewShift = shift
-      const w = canvas.clientWidth || 1
-      const h = canvas.clientHeight || 1
-      if (shift > 0) camera.setViewOffset(w, h, w * shift, 0, w, h)
-      else camera.clearViewOffset()
-    }
     camera.updateMatrixWorld()
 
     // Floating labels.
@@ -313,7 +302,6 @@ export function startIsland(root: HTMLElement, opts: StartOptions): IslandSessio
   // Resize with the container.
   const resize = () => {
     world.resize(canvas.clientWidth || root.clientWidth, canvas.clientHeight || root.clientHeight)
-    viewShift = -1
   }
   const resizeObserver = new ResizeObserver(resize)
   resizeObserver.observe(root)

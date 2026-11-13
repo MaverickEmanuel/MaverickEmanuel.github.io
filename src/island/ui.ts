@@ -186,6 +186,9 @@ export class Hud {
         else button.setAttribute("aria-pressed", String(!muted))
       }
     }
+    // Returning visitors skip the welcome card, so nothing asks them about
+    // sound: stay silent until they press the speaker button (or M).
+    if (load(WELCOMED_KEY) === "1") opts.audio.holdSilent()
     syncSound(opts.audio.muted)
     const unsubscribe = opts.audio.onChange((muted) => {
       syncSound(muted)
@@ -202,11 +205,6 @@ export class Hud {
       },
       { signal }
     )
-    // Returning visitors skip the welcome card: their first click or key starts the sound.
-    const unlock = () => opts.audio.unlock()
-    window.addEventListener("pointerdown", unlock, { signal, capture: true })
-    window.addEventListener("keydown", unlock, { signal, capture: true })
-
     // UI clicks (the dialog's own open/close sounds cover its open and close).
     root.addEventListener(
       "click",

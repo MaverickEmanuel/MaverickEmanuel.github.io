@@ -1109,6 +1109,14 @@ html.view-island,
   backdrop-filter: blur(22px) saturate(1.35);
   -webkit-backdrop-filter: blur(22px) saturate(1.35);
 }
+/* While a panel is open, the floating labels, prompt and hint would show through it. */
+#island:has(.island-dialog[open], .island-welcome[open]) :is(.island-labels, .island-prompt, .island-hint) {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 160ms ease,
+    visibility 0s linear 160ms;
+}
 .island-welcome::backdrop,
 .island-dialog::backdrop {
   background: rgb(18 14 10 / 0.3);
@@ -1481,14 +1489,6 @@ html.view-island,
   .island-stations ul {
     flex-wrap: wrap;
     justify-content: center;
-  }
-}
-
-/* Wide screens: the panel sits right of centre and the camera frames the landmark on the left. */
-@media (min-width: 1100px) {
-  .island-dialog {
-    margin: auto 4vw auto auto;
-    width: min(42rem, 48vw);
   }
 }
 
